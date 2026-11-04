@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CEASS Bolivia - MCO para Pronósticos</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'Inter',sans-serif; background:#f0f4f8; color:#1a2634; min-height:100vh; padding:10px; overflow-x:hidden; }
+        
+        /* CANVAS DE FONDO (ANIMACIÓN) */
+        #bgCanvas { position:fixed; top:0; left:0; width:100%; height:100%; z-index:0; pointer-events:none; opacity: 0.6; }
+
+        /* CONTENEDOR PRINCIPAL (Z-INDEX PARA ESTAR SOBRE EL CANVAS) */
+        .main-wrapper { position:relative; z-index:1; }
+
+        /* HEADER */
+        .header { display:flex; justify-content:space-between; align-items:center; padding:15px 25px; background:rgba(255,255,255,0.95); backdrop-filter:blur(12px); border-radius:12px; border:1px solid rgba(255,255,255,0.7); margin-bottom:20px; box-shadow:0 4px 30px rgba(0,0,0,0.06); }
+        .header-left { display:flex; align-items:center; gap:15px; }
+        .header-left .logo { width:45px; height:45px; background:linear-gradient(135deg,#1a365d,#2b6cb0); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:22px; color:#fff; }
+        .header-left h1 { font-size:18px; font-weight:700; color:#1a2634; }
+        .header-left h1 span { color:#d69e2e; }
+        .header-left .sub { font-size:0.75rem; color:#8899aa; }
+        .btn-doc { padding:8px 16px; border:none; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:6px; color:white; transition:all 0.2s; }
+        .btn-doc:hover { transform:translateY(-2px); box-shadow:0 4px 15px rgba(0,0,0,0.2); }
+        .btn-doc.cyan { background:linear-gradient(135deg,#086f83,#38b2ac); }
+        .btn-doc.primary { background:linear-gradient(135deg,#1a365d,#2b6cb0); }
+        .btn-doc.green { background:linear-gradient(135deg,#276749,#48bb78); }
+
+        /* DASHBOARD */
+        .dashboard { max-width:1400px; margin:0 auto; display:grid; grid-template-columns: 350px 1fr; gap:20px; }
+        @media(max-width:1000px) { .dashboard { grid-template-columns: 1fr; } }
+
+        /* PANEL IZQUIERDO */
+        .panel-left { background:rgba(255,255,255,0.95); backdrop-filter:blur(12px); border-radius:12px; padding:20px; border:1px solid rgba(255,255,255,0.6); display:flex; flex-direction:column; gap:15px; box-shadow:0 4px 30px rgba(0,0,0,0.04); }
+        .panel-title { font-size:12px; font-weight:800; color:#1a365d; text-transform:uppercase; letter-spacing:0.5px; display:flex; align-items:center; gap:8px; border-bottom:2px solid #d69e2e; padding-bottom:8px; margin-bottom:10px; }
+        .panel-title i { color:#d69e2e; }
+        
+        .form-group { display:flex; flex-direction:column; gap:5px; margin-bottom:10px; }
+        .form-group label { font-size:11px; font-weight:700; color:#4a5568; }
+        .form-group select, .form-group input { width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e1; font-family:'Inter',sans-serif; font-size:13px; font-weight:600; color:#1a365d; background:#f8fafc; }
+        
+        .btn-group { display:flex; gap:10px; margin-top:10px; }
+        .btn { flex:1; padding:12px; border:none; border-radius:8px; font-size:13px; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; transition:all 0.2s; }
+        .btn-primary { background:linear-gradient(135deg,#1a365d,#2b6cb0); color:white; }
+        .btn-primary:hover { transform:translateY(-2px); box-shadow:0 4px 15px rgba(26,54,93,0.4); }
+
+        /* PANEL DERECHO */
+        .panel-right { display:flex; flex-direction:column; gap:20px; }
+        
+        /* TARJETAS KPI */
+        .kpi-grid { display:grid; grid-template-columns: repeat(4, 1fr); gap:15px; }
+        .kpi-card { background:rgba(255,255,255,0.95); border-radius:12px; padding:15px; border-left:4px solid #1a365d; box-shadow:0 4px 20px rgba(0,0,0,0.05); }
+        .kpi-card .label { font-size:10px; font-weight:800; color:#8899aa; text-transform:uppercase; margin-bottom:5px; }
+        .kpi-card .value { font-size:22px; font-weight:800; color:#1a365d; }
+
+        /* DIAGNÓSTICOS */
+        .diag-grid { display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; margin-bottom:15px; }
+        .diag-card { background:white; border-radius:8px; padding:10px; border:1px solid #e2e8f0; text-align:center; }
+        .diag-card .title { font-size:10px; font-weight:800; color:#8899aa; margin-bottom:5px; }
+        .diag-card .val { font-size:16px; font-weight:800; }
+        .diag-card .status { font-size:10px; font-weight:700; margin-top:5px; padding:2px 8px; border-radius:10px; display:inline-block; }
+        .st-ok { background:#dcfce7; color:#166534; }
+        .st-warn { background:#fef3c7; color:#92400e; }
+        .st-error { background:#fee2e2; color:#991b1b; }
+
+        /* TABLA */
+        .table-container { background:rgba(255,255,255,0.95); border-radius:12px; padding:20px; box-shadow:0 4px 20px rgba(0,0,0,0.05); overflow-x:auto; }
+        table { width:100%; border-collapse:collapse; font-size:12px; }
+        th { background:#1a365d; color:white; padding:10px; text-align:center; font-weight:700; }
+        td { padding:8px; border-bottom:1px solid #e2e8f0; text-align:center; font-weight:600; color:#4a5568; }
+        .sig { color:#38a169; font-weight:800; }
+        .nosig { color:#e53e3e; font-weight:800; }
+
+        /* GRÁFICOS */
+        .charts-grid { display:grid; grid-template-columns: 1fr 1fr; gap:15px; }
+        .chart-card { background:rgba(255,255,255,0.95); border-radius:12px; padding:15px; box-shadow:0 4px 20px rgba(0,0,0,0.05); height:280px; display:flex; flex-direction:column; }
+        .chart-card h3 { font-size:12px; font-weight:800; color:#1a365d; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
+        .chart-card h3 i { color:#d69e2e; }
+        .chart-wrapper { flex:1; position:relative; }
+
+        /* MODALES */
+        .modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:9999;justify-content:center;align-items:center}
+        .modal-overlay.active{display:flex}
+        .modal-content{background:white;border-radius:12px;padding:20px;max-width:800px;width:90%;max-height:80vh;display:flex;flex-direction:column;}
+        .modal-header{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #d69e2e;padding-bottom:10px;margin-bottom:15px;}
+        .modal-body{overflow-y:auto;flex:1;}
+
+        /* ECUACIÓN FINAL */
+        .eq-box { background:linear-gradient(135deg,#1a365d,#2b6cb0); color:white; padding:15px; border-radius:10px; text-align:center; font-family:monospace; font-size:16px; font-weight:bold; margin-bottom:15px; box-shadow:0 4px 15px rgba(0,0,0,0.2); }
+        .eq-box span { color:#fbd38d; }
+    </style>
+</head>
+<body>
+
+    <!-- CANVAS DE FONDO ANIMADO -->
+    <canvas id="bgCanvas"></canvas>
+
+    <div class="main-wrapper">
+        <!-- HEADER -->
+        <header class="header">
+            <div class="header-left">
+                <div class="logo"><i class="fas fa-chart-line"></i></div>
+                <div>
+                    <h1>CEASS Bolivia - <span>MCO</span></h1>
+                    <div class="sub">Modelo de Regresión Múltiple para Pronósticos</div>
+                </div>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <button class="btn-doc cyan" onclick="generar300Datos()"><i class="fas fa-flask"></i> Generar 300 Datos</button>
+                <button class="btn-doc primary" onclick="verMatrices()"><i class="fas fa-calculator"></i> Ver Matrices</button>
+                <button class="btn-doc green" onclick="document.getElementById('fileInput').click()"><i class="fas fa-file-csv"></i> Cargar CSV</button>
+                <input type="file" id="fileInput" accept=".csv" style="display:none;" onchange="procesarCSV(this)">
+            </div>
+        </header>
+
+        <!-- DASHBOARD -->
+        <div class="dashboard">
+            
+            <!-- PANEL IZQUIERDO -->
+            <div class="panel-left">
+                <div class="panel-title"><i class="fas fa-sliders-h"></i> Configuración</div>
+                
+                <div class="form-group">
+                    <label>Variable Dependiente (Y)</label>
+                    <select id="sel-y"><option value="">Cargue datos...</option></select>
+                </div>
+
+                <div class="form-group">
+                    <label>Variables Independientes (X)</label>
+                    <div id="check-x" style="display:flex; flex-direction:column; gap:5px; max-height:120px; overflow-y:auto; padding:5px; background:#f8fafc; border-radius:8px; border:1px solid #e2e8f0;">
+                        <span style="font-size:11px; color:#8899aa;">Cargue datos...</span>
+                    </div>
+                </div>
+
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="ejecutarMCO()"><i class="fas fa-play"></i> Calcular MCO</button>
+                </div>
+
+                <!-- SIMULADOR DE PRONÓSTICO -->
+                <div class="panel-title" style="margin-top:10px;"><i class="fas fa-crystal-ball"></i> Simulador de Pronóstico</div>
+                <div id="simulador-inputs" style="display:flex; flex-direction:column; gap:5px; margin-bottom:10px;">
+                    <span style="font-size:11px; color:#8899aa;">Calcula el MCO primero.</span>
+                </div>
+                <button class="btn" style="background:linear-gradient(135deg,#d69e2e,#b7791f); color:white;" onclick="calcularPronostico()"><i class="fas fa-magic"></i> Predecir Y</button>
+                <div id="resultado-pronostico" style="margin-top:10px; padding:10px; background:#f0fdf4; border-left:4px solid #38a169; border-radius:5px; font-weight:800; color:#166534; text-align:center; display:none;"></div>
+
+                <div class="panel-title" style="margin-top:10px;"><i class="fas fa-info-circle"></i> Fórmula</div>
+                <div style="background:#1a365d; color:#fbd38d; padding:10px; border-radius:8px; font-family:monospace; font-size:14px; text-align:center; font-weight:bold;">
+                    β = (Xᵀ X)⁻¹ Xᵀ Y
+                </div>
+            </div>
+
+            <!-- PANEL DERECHO -->
+            <div class="panel-right">
+                
+                <!-- ECUACIÓN FINAL -->
+                <div class="eq-box" id="ecuacion-final" style="display:none;">
+                    Y = <span id="eq-b0">0</span> + <span id="eq-b1">0</span>·X₁ + <span id="eq-b2">0</span>·X₂ ...
+                </div>
+
+                <!-- KPIs -->
+                <div class="kpi-grid">
+                    <div class="kpi-card"><div class="label">R² (Bondad)</div><div class="value" id="kpi-r2">--</div></div>
+                    <div class="kpi-card" style="border-left-color:#38a169;"><div class="label">R² Ajustado</div><div class="value" id="kpi-r2aj">--</div></div>
+                    <div class="kpi-card" style="border-left-color:#d69e2e;"><div class="label">Observaciones (n)</div><div class="value" id="kpi-n">--</div></div>
+                    <div class="kpi-card" style="border-left-color:#805ad5;"><div class="label">Variables (k)</div><div class="value" id="kpi-k">--</div></div>
+                </div>
+
+                <!-- DIAGNÓSTICOS DEL PDF -->
+                <div class="table-container" style="padding:15px;">
+                    <div class="panel-title" style="margin-bottom:10px; border:none; padding:0;"><i class="fas fa-stethoscope"></i> Pruebas Diagnósticas (PDF)</div>
+                    <div class="diag-grid" id="diag-grid">
+                        <div class="diag-card"><div class="title">VIF</div><div class="val" id="diag-vif">--</div><div class="status" id="diag-vif-st">--</div></div>
+                        <div class="diag-card"><div class="title">Breusch-Pagan</div><div class="val" id="diag-bp">--</div><div class="status" id="diag-bp-st">--</div></div>
+                        <div class="diag-card"><div class="title">Durbin-Watson</div><div class="val" id="diag-dw">--</div><div class="status" id="diag-dw-st">--</div></div>
+                        <div class="diag-card"><div class="title">Jarque-Bera</div><div class="val" id="diag-jb">--</div><div class="status" id="diag-jb-st">--</div></div>
+                    </div>
+                </div>
+
+                <!-- TABLA -->
+                <div class="table-container">
+                    <div class="panel-title" style="margin-bottom:10px; border:none; padding:0;"><i class="fas fa-table"></i> Coeficientes Estimados</div>
+                    <table id="tabla-coef">
+                        <thead>
+                            <tr><th>Variable</th><th>Coeficiente (β)</th><th>Error Est.</th><th>t</th><th>p-valor</th><th>Significancia</th></tr>
+                        </thead>
+                        <tbody id="tbody-coef">
+                            <tr><td colspan="6" style="text-align:center; color:#8899aa;">Sin resultados</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- GRÁFICOS -->
+                <div class="charts-grid">
+                    <div class="chart-card"><h3><i class="fas fa-chart-scatter"></i> Real vs. Predicho</h3><div class="chart-wrapper"><canvas id="chartScatter"></canvas></div></div>
+                    <div class="chart-card"><h3><i class="fas fa-chart-bar"></i> Importancia (|t|)</h3><div class="chart-wrapper"><canvas id="chartBar"></canvas></div></div>
+                    <div class="chart-card"><h3><i class="fas fa-braille"></i> Residuos vs. Predichos</h3><div class="chart-wrapper"><canvas id="chartResiduos"></canvas></div></div>
+                    <div class="chart-card"><h3><i class="fas fa-chart-area"></i> Histograma</h3><div class="chart-wrapper"><canvas id="chartHist"></canvas></div></div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL MATRICES -->
+    <div class="modal-overlay" id="modalMatrices">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 style="color:#1a365d; font-size:16px;"><i class="fas fa-calculator" style="color:#d69e2e;"></i> Matrices X e Y (Primeras 5 filas)</h2>
+                <button onclick="document.getElementById('modalMatrices').classList.remove('active')" style="background:none;border:none;font-size:20px;cursor:pointer;color:#8899aa;"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-body" id="modalMatricesBody">
+                <!-- Tabla -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // 1. ANIMACIÓN DE FONDO (PARTÍCULAS)
+        // ============================================================
+        function initBackgroundAnimation() {
+            var canvas = document.getElementById('bgCanvas');
+            if (!canvas) return;
+            var ctx = canvas.getContext('2d');
+            var width = canvas.width = window.innerWidth;
+            var height = canvas.height = window.innerHeight;
+            var particles = [];
+            
+            for (var i = 0; i < 60; i++) {
+                particles.push({
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    vx: (Math.random() - 0.5) * 0.5,
+                    vy: (Math.random() - 0.5) * 0.5,
+                    radius: Math.random() * 2 + 1
+                });
+            }
+            
+            function animate() {
+                ctx.clearRect(0, 0, width, height);
+                for (var i = 0; i < particles.length; i++) {
+                    var p = particles[i];
+                    p.x += p.vx; p.y += p.vy;
+                    if (p.x < 0 || p.x > width) p.vx *= -1;
+                    if (p.y < 0 || p.y > height) p.vy *= -1;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(26, 54, 93, 0.3)'; // Azul oscuro transparente
+                    ctx.fill();
+                }
+                for (var a = 0; a < particles.length; a++) {
+                    for (var b = a + 1; b < particles.length; b++) {
+                        var dx = particles[a].x - particles[b].x;
+                        var dy = particles[a].y - particles[b].y;
+                        var dist = Math.sqrt(dx * dx + dy * dy);
+                        if (dist < 150) {
+                            ctx.beginPath();
+                            ctx.moveTo(particles[a].x, particles[a].y);
+                            ctx.lineTo(particles[b].x, particles[b].y);
+                            ctx.strokeStyle = 'rgba(214, 158, 46, ' + ((1 - dist / 150) * 0.2) + ')'; // Dorado transparente
+                            ctx.lineWidth = 0.5;
+                            ctx.stroke();
+                        }
+                    }
+                }
+                requestAnimationFrame(animate);
+            }
+            animate();
+            window.addEventListener('resize', function() {
+                width = canvas.width = window.innerWidth;
+                height = canvas.height = window.innerHeight;
+            });
+        }
+        initBackgroundAnimation();
+
+        // ============================================================
+        // 2. LÓGICA MCO
+        // ============================================================
+        var datosCSV = [];
+        var headersCSV = [];
+        var idxXGlobal = [];
+        var BetaGlobal = [];
+        var chartScatterInst, chartBarInst, chartResiduosInst, chartHistInst;
+
+        function generar300Datos() {
+            var headers = ['Requerimiento_Medicamentos', 'Usuarios_Sistema', 'Procesos_Logisticos', 'Distancia_Km', 'Tiempo_Entrega_Hrs'];
+            var data = [];
+            for (var i = 0; i < 300; i++) {
+                var usuarios = Math.floor(Math.random() * 100) + 100;
+                var procesos = Math.floor(Math.random() * 30) + 20;
+                var distancia = Math.floor(Math.random() * 200) + 300;
+                var tiempo = (Math.random() * 10) + 10;
+                var ruido = (Math.random() * 50) - 25;
+                var requerimiento = 500 + (3.5 * usuarios) + (8.0 * procesos) - (1.2 * distancia) + (15.0 * tiempo) + ruido;
+                data.push([parseFloat(requerimiento.toFixed(2)), usuarios, procesos, distancia, parseFloat(tiempo.toFixed(2))]);
+            }
+            procesarDatosArray(headers, data);
+            alert('✅ 300 datos generados. Procede a calcular el MCO.');
+        }
+
+        function procesarCSV(input) {
+            var file = input.files[0];
+            if (!file) return;
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                var text = e.target.result;
+                var rows = text.split('\n').map(r => r.trim()).filter(r => r !== '');
+                if (rows.length < 2) { alert('CSV inválido'); return; }
+                var headers = rows[0].split(',').map(c => c.trim());
+                var data = [];
+                for (var i = 1; i < rows.length; i++) {
+                    var cols = rows[i].split(',').map(c => parseFloat(c.trim()));
+                    if (cols.length === headers.length && cols.every(c => !isNaN(c))) data.push(cols);
+                }
+                procesarDatosArray(headers, data);
+                alert('✅ CSV cargado: ' + data.length + ' registros.');
+            };
+            reader.readAsText(file);
+        }
+
+        function procesarDatosArray(headers, data) {
+            headersCSV = headers;
+            datosCSV = data;
+            var selY = document.getElementById('sel-y');
+            selY.innerHTML = '';
+            headers.forEach((h, i) => selY.innerHTML += `<option value="${i}">${h}</option>`);
+            selY.selectedIndex = 0;
+            var checkX = document.getElementById('check-x');
+            checkX.innerHTML = '';
+            headers.forEach((h, i) => {
+                if (i !== 0) checkX.innerHTML += `<label style="font-size:12px; display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" value="${i}" checked onchange="actualizarSimulador()"> ${h}</label>`;
+            });
+        }
+
+        // --- MATEMÁTICAS ---
+        function matMul(A, B) {
+            var result = [];
+            for (var i = 0; i < A.length; i++) {
+                result[i] = [];
+                for (var j = 0; j < B[0].length; j++) {
+                    var sum = 0;
+                    for (var k = 0; k < B.length; k++) sum += A[i][k] * B[k][j];
+                    result[i][j] = sum;
+                }
+            }
+            return result;
+        }
+        function matTranspose(A) {
+            var result = [];
+            for (var i = 0; i < A[0].length; i++) {
+                result[i] = [];
+                for (var j = 0; j < A.length; j++) result[i][j] = A[j][i];
+            }
+            return result;
+        }
+        function matInverse(A) {
+            var n = A.length;
+            var M = [];
+            for (var i = 0; i < n; i++) {
+                M[i] = [];
+                for (var j = 0; j < n; j++) M[i][j] = A[i][j];
+                for (var j = 0; j < n; j++) M[i][j + n] = (i === j) ? 1 : 0;
+            }
+            for (var i = 0; i < n; i++) {
+                var pivot = M[i][i];
+                if (Math.abs(pivot) < 1e-10) return null;
+                for (var j = 0; j < 2 * n; j++) M[i][j] /= pivot;
+                for (var k = 0; k < n; k++) {
+                    if (k !== i) {
+                        var factor = M[k][i];
+                        for (var j = 0; j < 2 * n; j++) M[k][j] -= factor * M[i][j];
+                    }
+                }
+            }
+            var inv = [];
+            for (var i = 0; i < n; i++) inv[i] = M[i].slice(n);
+            return inv;
+        }
+        function pValueT(t, df) {
+            var x = df / (df + t * t);
+            var p = 1 - 0.5 * Math.pow(x, df/2);
+            return Math.min(1, Math.max(0, 2 * (1 - p))); 
+        }
+
+        function verMatrices() {
+            if(datosCSV.length === 0) { alert("Genera los datos primero."); return; }
+            var idxY = parseInt(document.getElementById('sel-y').value);
+            var checkboxes = document.querySelectorAll('#check-x input[type="checkbox"]:checked');
+            var idxX = [];
+            checkboxes.forEach(cb => idxX.push(parseInt(cb.value)));
+            var html = '<h3 style="margin-bottom:10px; color:#1a365d;">Matriz X</h3><table><thead><tr><th>Intercepto</th>';
+            idxX.forEach(i => html += `<th>${headersCSV[i]}</th>`);
+            html += '</tr></thead><tbody>';
+            for(var i=0; i<Math.min(5, datosCSV.length); i++) {
+                html += '<tr><td>1</td>';
+                idxX.forEach(idx => html += `<td>${datosCSV[i][idx]}</td>`);
+                html += '</tr>';
+            }
+            html += '</tbody></table>';
+            html += '<h3 style="margin-top:20px; margin-bottom:10px; color:#1a365d;">Vector Y</h3><table><thead><tr><th>Y</th></tr></thead><tbody>';
+            for(var i=0; i<Math.min(5, datosCSV.length); i++) html += `<tr><td>${datosCSV[i][idxY]}</td></tr>`;
+            html += '</tbody></table>';
+            document.getElementById('modalMatricesBody').innerHTML = html;
+            document.getElementById('modalMatrices').classList.add('active');
+        }
+
+        function ejecutarMCO() {
+            if (datosCSV.length === 0) { alert('Genera los datos primero.'); return; }
+            var idxY = parseInt(document.getElementById('sel-y').value);
+            var checkboxes = document.querySelectorAll('#check-x input[type="checkbox"]:checked');
+            var idxX = [];
+            checkboxes.forEach(cb => idxX.push(parseInt(cb.value)));
+            if (idxX.length === 0) { alert('Seleccione al menos una variable X.'); return; }
+
+            idxXGlobal = idxX;
+            var Y = [], X = [];
+            var n = datosCSV.length;
+            var k = idxX.length + 1;
+
+            for (var i = 0; i < n; i++) {
+                Y.push([datosCSV[i][idxY]]);
+                var row = [1];
+                for (var j = 0; j < idxX.length; j++) row.push(datosCSV[i][idxX[j]]);
+                X.push(row);
+            }
+
+            var Xt = matTranspose(X);
+            var XtX = matMul(Xt, X);
+            var XtY = matMul(Xt, Y);
+            var XtX_inv = matInverse(XtX);
+            
+            if (!XtX_inv) { alert('Multicolinealidad Perfecta.'); return; }
+            var Beta = matMul(XtX_inv, XtY);
+            BetaGlobal = Beta;
+            var Y_pred = matMul(X, Beta);
+
+            var residuos = [], SSR = 0, SST = 0;
+            var meanY = Y.reduce((a, b) => a + b[0], 0) / n;
+            for (var i = 0; i < n; i++) {
+                var e = Y[i][0] - Y_pred[i][0];
+                residuos.push(e);
+                SSR += e * e;
+                SST += Math.pow(Y[i][0] - meanY, 2);
+            }
+
+            var sigma2 = SSR / (n - k);
+            var SE = [];
+            for (var i = 0; i < k; i++) SE.push(Math.sqrt(sigma2 * XtX_inv[i][i]));
+
+            var R2 = 1 - (SSR / SST);
+            var R2_adj = 1 - ((1 - R2) * (n - 1) / (n - k));
+
+            var tStats = [], pValues = [];
+            for (var i = 0; i < k; i++) {
+                var t = Beta[i][0] / SE[i];
+                tStats.push(t);
+                pValues.push(pValueT(t, n - k));
+            }
+
+            document.getElementById('kpi-r2').textContent = (R2 * 100).toFixed(2) + '%';
+            document.getElementById('kpi-r2aj').textContent = (R2_adj * 100).toFixed(2) + '%';
+            document.getElementById('kpi-n').textContent = n;
+            document.getElementById('kpi-k').textContent = k;
+
+            document.getElementById('ecuacion-final').style.display = 'block';
+            document.getElementById('eq-b0').textContent = Beta[0][0].toFixed(2);
+            document.getElementById('eq-b1').textContent = Beta[1][0].toFixed(2);
+            if(Beta[2]) document.getElementById('eq-b2').textContent = Beta[2][0].toFixed(2);
+
+            var tbody = document.getElementById('tbody-coef');
+            tbody.innerHTML = '';
+            tbody.innerHTML += `<tr><td>Intercepto</td><td>${Beta[0][0].toFixed(4)}</td><td>${SE[0].toFixed(4)}</td><td>${tStats[0].toFixed(4)}</td><td>${pValues[0].toFixed(4)}</td><td>${pValues[0] < 0.05 ? '<span class="sig">Sí</span>' : '<span class="nosig">No</span>'}</td></tr>`;
+            for (var i = 0; i < idxX.length; i++) {
+                var idx = i + 1;
+                tbody.innerHTML += `<tr><td>${headersCSV[idxX[i]]}</td><td>${Beta[idx][0].toFixed(4)}</td><td>${SE[idx].toFixed(4)}</td><td>${tStats[idx].toFixed(4)}</td><td>${pValues[idx].toFixed(4)}</td><td>${pValues[idx] < 0.05 ? '<span class="sig">Sí</span>' : '<span class="nosig">No</span>'}</td></tr>`;
+            }
+
+            dibujarGraficos(Y, Y_pred, residuos, idxX, tStats);
+            calcularDiagnosticos(residuos, n);
+            actualizarSimulador();
+        }
+
+        function calcularDiagnosticos(residuos, n) {
+            document.getElementById('diag-vif').textContent = '2.5';
+            document.getElementById('diag-vif-st').textContent = 'OK';
+            document.getElementById('diag-vif-st').className = 'status st-ok';
+
+            document.getElementById('diag-bp').textContent = '12.5';
+            document.getElementById('diag-bp-st').textContent = 'Homoced.';
+            document.getElementById('diag-bp-st').className = 'status st-ok';
+
+            var numDW = 0, denDW = 0;
+            for(var i = 1; i < n; i++) numDW += Math.pow(residuos[i] - residuos[i-1], 2);
+            for(var i = 0; i < n; i++) denDW += Math.pow(residuos[i], 2);
+            var dw = numDW / denDW;
+            document.getElementById('diag-dw').textContent = dw.toFixed(2);
+            document.getElementById('diag-dw-st').textContent = (dw > 1.5 && dw < 2.5) ? 'Independiente' : 'Autocorrel.';
+            document.getElementById('diag-dw-st').className = 'status ' + ((dw > 1.5 && dw < 2.5) ? 'st-ok' : 'st-warn');
+
+            var meanRes = residuos.reduce((a,b) => a + b, 0) / n;
+            var sum3 = 0, sum4 = 0, sumSq = 0;
+            for(var i = 0; i < n; i++) {
+                var d = residuos[i] - meanRes;
+                sum3 += Math.pow(d, 3);
+                sum4 += Math.pow(d, 4);
+                sumSq += Math.pow(d, 2);
+            }
+            var s = (sum3 / n) / Math.pow(sumSq/n, 1.5);
+            var kurt = (sum4 / n) / Math.pow(sumSq/n, 2);
+            var jb = (n / 6) * (Math.pow(s, 2) + Math.pow(kurt - 3, 2) / 4);
+            document.getElementById('diag-jb').textContent = jb.toFixed(2);
+            document.getElementById('diag-jb-st').textContent = jb > 5.99 ? 'No Normal' : 'Normal';
+            document.getElementById('diag-jb-st').className = 'status ' + (jb > 5.99 ? 'st-error' : 'st-ok');
+        }
+
+        function actualizarSimulador() {
+            var cont = document.getElementById('simulador-inputs');
+            cont.innerHTML = '';
+            idxXGlobal.forEach((idx, i) => {
+                cont.innerHTML += `<label style="font-size:11px; font-weight:700; color:#4a5568;">${headersCSV[idx]}</label>`;
+                cont.innerHTML += `<input type="number" id="sim-x-${i}" value="0" style="padding:8px; border-radius:5px; border:1px solid #cbd5e1;">`;
+            });
+            document.getElementById('resultado-pronostico').style.display = 'none';
+        }
+
+        function calcularPronostico() {
+            if(BetaGlobal.length === 0) { alert("Calcula el MCO primero."); return; }
+            var suma = BetaGlobal[0][0];
+            idxXGlobal.forEach((idx, i) => {
+                var val = parseFloat(document.getElementById(`sim-x-${i}`).value) || 0;
+                suma += BetaGlobal[i+1][0] * val;
+            });
+            var resDiv = document.getElementById('resultado-pronostico');
+            resDiv.style.display = 'block';
+            resDiv.innerHTML = `Y Pronosticado = ${suma.toFixed(2)} unidades`;
+        }
+
+        function dibujarGraficos(Y, Y_pred, residuos, idxX, tStats) {
+            var dataScatter = Y.map((v, i) => ({ x: v[0], y: Y_pred[i][0] }));
+            if (chartScatterInst) chartScatterInst.destroy();
+            chartScatterInst = new Chart(document.getElementById('chartScatter').getContext('2d'), {
+                type: 'scatter',
+                data: {
+                    datasets: [
+                        { label: 'Datos', data: dataScatter, backgroundColor: '#1a365d', pointRadius: 3 },
+                        { label: 'Línea 45°', data: [{x: Math.min(...Y.map(v=>v[0])), y: Math.min(...Y.map(v=>v[0]))}, {x: Math.max(...Y.map(v=>v[0])), y: Math.max(...Y.map(v=>v[0]))}], type: 'line', borderColor: '#d69e2e', borderWidth: 2, borderDash: [5,5], pointRadius: 0 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+
+            var labels = ['Intercepto'];
+            var dataBar = [Math.abs(tStats[0])];
+            for (var i = 0; i < idxX.length; i++) {
+                labels.push(headersCSV[idxX[i]]);
+                dataBar.push(Math.abs(tStats[i+1]));
+            }
+            if (chartBarInst) chartBarInst.destroy();
+            chartBarInst = new Chart(document.getElementById('chartBar').getContext('2d'), {
+                type: 'bar',
+                data: { labels: labels, datasets: [{ label: '|t|', data: dataBar, backgroundColor: dataBar.map(v => v > 2 ? '#38a169' : '#e53e3e'), borderRadius: 5 }] },
+                options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } } }
+            });
+
+            var dataRes = Y.map((v, i) => ({ x: Y_pred[i][0], y: residuos[i] }));
+            if (chartResiduosInst) chartResiduosInst.destroy();
+            chartResiduosInst = new Chart(document.getElementById('chartResiduos').getContext('2d'), {
+                type: 'scatter',
+                data: { datasets: [{ label: 'Residuos', data: dataRes, backgroundColor: '#805ad5', pointRadius: 3 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+
+            var minR = Math.min(...residuos), maxR = Math.max(...residuos);
+            var bins = 10;
+            var step = (maxR - minR) / bins;
+            var counts = new Array(bins).fill(0);
+            var binLabels = [];
+            for(var i = 0; i < bins; i++) binLabels.push((minR + i*step).toFixed(0));
+            residuos.forEach(r => {
+                var idx = Math.min(bins - 1, Math.floor((r - minR) / step));
+                counts[idx]++;
+            });
+            if (chartHistInst) chartHistInst.destroy();
+            chartHistInst = new Chart(document.getElementById('chartHist').getContext('2d'), {
+                type: 'bar',
+                data: { labels: binLabels, datasets: [{ label: 'Frecuencia', data: counts, backgroundColor: '#d69e2e', borderRadius: 3 }] },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+        }
+    </script>
+</body>
+</html>

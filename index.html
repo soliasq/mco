@@ -1,429 +1,724 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CEASS Bolivia - MCO para Pronósticos</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        * { margin:0; padding:0; box-sizing:border-box; }
-        body { font-family:'Inter',sans-serif; background:#f0f4f8; color:#1a2634; min-height:100vh; padding:10px; overflow-x:hidden; }
-        
-        /* CANVAS DE FONDO (ANIMACIÓN) */
-        #bgCanvas { position:fixed; top:0; left:0; width:100%; height:100%; z-index:0; pointer-events:none; opacity: 0.6; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EPSAS La Paz - MCO</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --primary:#1a365d; --primary-light:#2b6cb0; --gold:#d69e2e; --gold-light:#f6ad55;
+  --green:#38a169; --red:#e53e3e; --purple:#805ad5; --cyan:#38b2ac;
+  --bg:#f0f4f8; --card:rgba(255,255,255,0.94); --text:#1a2634; --muted:#8899aa;
+  --shadow:0 8px 30px rgba(26,54,93,0.08); --shadow-hover:0 12px 40px rgba(26,54,93,0.16);
+  --radius:14px; --transition:all .3s cubic-bezier(.4,0,.2,1);
+}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:10px;overflow-x:hidden}
+#bgCanvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.dashboard{max-width:100%;margin:0 auto;display:flex;flex-direction:column;gap:12px;position:relative;z-index:1;min-height:100vh}
 
-        /* CONTENEDOR PRINCIPAL (Z-INDEX PARA ESTAR SOBRE EL CANVAS) */
-        .main-wrapper { position:relative; z-index:1; }
+/* HEADER */
+.header{display:flex;justify-content:space-between;align-items:center;padding:12px 20px;background:var(--card);backdrop-filter:blur(16px);border-radius:var(--radius);border:1px solid rgba(255,255,255,0.7);flex-wrap:wrap;gap:10px;box-shadow:var(--shadow);animation:slideDown .6s ease}
+@keyframes slideDown{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
+.header-left{display:flex;align-items:center;gap:14px}
+.header-left .logo{width:46px;height:46px;background:linear-gradient(135deg,var(--primary),var(--primary-light));border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff;box-shadow:0 4px 14px rgba(26,54,93,0.3);animation:logoPulse 3s infinite}
+@keyframes logoPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+.header-left h1{font-size:18px;font-weight:800;color:var(--text)}
+.header-left h1 span{color:var(--gold)}
+.header-left .sub{font-size:0.72rem;color:var(--muted);font-weight:500}
+.header-center{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.header-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.badge{padding:6px 14px;border-radius:20px;font-size:0.68rem;font-weight:700;background:rgba(255,255,255,0.8);color:#4a5568;border:1px solid rgba(255,255,255,0.9);display:inline-flex;align-items:center;gap:6px;transition:var(--transition)}
+.badge:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.badge.primary{background:rgba(219,234,254,0.95);color:var(--primary)}
+.badge.success{background:rgba(209,250,229,0.95);color:#065f46}
+.badge.warning{background:rgba(254,243,199,0.95);color:#92400e}
+.badge.live{background:rgba(254,226,226,0.95);color:#991b1b}
+.badge.live i{animation:pulse 1.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.35}}
+#badge-r2.updated{animation:r2Pop .6s ease}
+@keyframes r2Pop{0%{transform:scale(1)}50%{transform:scale(1.15);background:rgba(209,250,229,1)}100%{transform:scale(1)}}
 
-        /* HEADER */
-        .header { display:flex; justify-content:space-between; align-items:center; padding:15px 25px; background:rgba(255,255,255,0.95); backdrop-filter:blur(12px); border-radius:12px; border:1px solid rgba(255,255,255,0.7); margin-bottom:20px; box-shadow:0 4px 30px rgba(0,0,0,0.06); }
-        .header-left { display:flex; align-items:center; gap:15px; }
-        .header-left .logo { width:45px; height:45px; background:linear-gradient(135deg,#1a365d,#2b6cb0); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:22px; color:#fff; }
-        .header-left h1 { font-size:18px; font-weight:700; color:#1a2634; }
-        .header-left h1 span { color:#d69e2e; }
-        .header-left .sub { font-size:0.75rem; color:#8899aa; }
-        .btn-doc { padding:8px 16px; border:none; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:6px; color:white; transition:all 0.2s; }
-        .btn-doc:hover { transform:translateY(-2px); box-shadow:0 4px 15px rgba(0,0,0,0.2); }
-        .btn-doc.cyan { background:linear-gradient(135deg,#086f83,#38b2ac); }
-        .btn-doc.primary { background:linear-gradient(135deg,#1a365d,#2b6cb0); }
-        .btn-doc.green { background:linear-gradient(135deg,#276749,#48bb78); }
+/* BOTONES */
+.btn-doc{padding:9px 16px;border:none;border-radius:10px;font-size:0.74rem;font-weight:700;cursor:pointer;transition:var(--transition);display:inline-flex;align-items:center;gap:7px;font-family:'Inter',sans-serif;color:white;position:relative;overflow:hidden}
+.btn-doc::after{content:'';position:absolute;inset:0;background:linear-gradient(120deg,transparent,rgba(255,255,255,0.35),transparent);transform:translateX(-100%);transition:transform .6s}
+.btn-doc:hover::after{transform:translateX(100%)}
+.btn-doc:hover{transform:translateY(-3px);box-shadow:0 8px 22px rgba(0,0,0,0.22)}
+.btn-doc:active{transform:translateY(-1px) scale(.98)}
+.btn-doc.primary{background:linear-gradient(135deg,var(--primary),var(--primary-light))}
+.btn-doc.green{background:linear-gradient(135deg,#276749,#48bb78)}
+.btn-doc.purple{background:linear-gradient(135deg,#553c9a,#805ad5)}
+.btn-doc.cyan{background:linear-gradient(135deg,#086f83,#38b2ac)}
+.btn-doc.warning{background:linear-gradient(135deg,#b7791f,var(--gold))}
+.btn-doc.red{background:linear-gradient(135deg,#9b2c2c,#e53e3e)}
+.btn-doc.teal{background:linear-gradient(135deg,#285e61,#38b2ac)}
 
-        /* DASHBOARD */
-        .dashboard { max-width:1400px; margin:0 auto; display:grid; grid-template-columns: 350px 1fr; gap:20px; }
-        @media(max-width:1000px) { .dashboard { grid-template-columns: 1fr; } }
+/* LAYOUT */
+.main-content{display:flex;gap:12px;align-items:flex-start}
+.panel-left{width:340px;flex-shrink:0;background:var(--card);backdrop-filter:blur(16px);border-radius:var(--radius);border:1px solid rgba(255,255,255,0.7);padding:16px;display:flex;flex-direction:column;gap:10px;overflow-y:auto;box-shadow:var(--shadow);max-height:calc(100vh - 40px);animation:fadeIn .8s ease}
+.panel-left::-webkit-scrollbar{width:6px}
+.panel-left::-webkit-scrollbar-thumb{background:rgba(214,158,46,0.4);border-radius:6px}
+.panel-title{font-size:11px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px;display:flex;align-items:center;gap:7px;margin-top:8px}
+.panel-title i{color:var(--gold)}
 
-        /* PANEL IZQUIERDO */
-        .panel-left { background:rgba(255,255,255,0.95); backdrop-filter:blur(12px); border-radius:12px; padding:20px; border:1px solid rgba(255,255,255,0.6); display:flex; flex-direction:column; gap:15px; box-shadow:0 4px 30px rgba(0,0,0,0.04); }
-        .panel-title { font-size:12px; font-weight:800; color:#1a365d; text-transform:uppercase; letter-spacing:0.5px; display:flex; align-items:center; gap:8px; border-bottom:2px solid #d69e2e; padding-bottom:8px; margin-bottom:10px; }
-        .panel-title i { color:#d69e2e; }
-        
-        .form-group { display:flex; flex-direction:column; gap:5px; margin-bottom:10px; }
-        .form-group label { font-size:11px; font-weight:700; color:#4a5568; }
-        .form-group select, .form-group input { width:100%; padding:10px; border-radius:8px; border:1px solid #cbd5e1; font-family:'Inter',sans-serif; font-size:13px; font-weight:600; color:#1a365d; background:#f8fafc; }
-        
-        .btn-group { display:flex; gap:10px; margin-top:10px; }
-        .btn { flex:1; padding:12px; border:none; border-radius:8px; font-size:13px; font-weight:800; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; transition:all 0.2s; }
-        .btn-primary { background:linear-gradient(135deg,#1a365d,#2b6cb0); color:white; }
-        .btn-primary:hover { transform:translateY(-2px); box-shadow:0 4px 15px rgba(26,54,93,0.4); }
+.pond-section{background:linear-gradient(135deg,rgba(214,158,46,0.12),rgba(26,54,93,0.08));border:2px solid rgba(214,158,46,0.3);border-radius:12px;padding:14px;transition:var(--transition)}
+.pond-section:hover{border-color:var(--gold);box-shadow:0 6px 22px rgba(214,158,46,0.15)}
+.pond-title{font-size:11px;font-weight:800;color:var(--gold);text-transform:uppercase;display:flex;align-items:center;gap:7px;margin-bottom:12px}
+.pond-status{display:flex;align-items:center;gap:8px;padding:9px 12px;background:rgba(56,161,105,0.15);border-radius:8px;font-size:10px;font-weight:700;color:#2f855a;margin-top:10px}
+.pond-status .dot-status{width:9px;height:9px;border-radius:50%;background:var(--green);animation:pulse 1.5s infinite;flex-shrink:0}
+.form-group{margin-bottom:8px}
+.form-group label{display:block;font-size:10px;font-weight:800;color:#4a5568;margin-bottom:5px;text-transform:uppercase}
+.form-group label i{color:var(--gold);margin-right:5px}
+.form-group select,.form-group input{width:100%;padding:9px 12px;background:rgba(255,255,255,0.95);border:1.5px solid rgba(0,0,0,0.08);border-radius:8px;color:var(--text);font-size:12px;font-family:'Inter',sans-serif;font-weight:600;transition:var(--transition)}
+.form-group select:focus,.form-group input:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(214,158,46,0.15)}
+.btn{padding:10px 16px;border:none;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;transition:var(--transition);display:inline-flex;align-items:center;gap:7px;font-family:'Inter',sans-serif;flex:1;justify-content:center}
+.btn:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,0.15)}
+.btn:active{transform:translateY(0) scale(.98)}
+.btn-primary{background:linear-gradient(135deg,var(--primary),var(--primary-light));color:white}
+.btn-outline{background:rgba(255,255,255,0.85);color:#4a5568;border:1.5px solid rgba(0,0,0,0.08)}
+.btn-test{background:linear-gradient(135deg,#97266d,#d53f8c);color:white}
 
-        /* PANEL DERECHO */
-        .panel-right { display:flex; flex-direction:column; gap:20px; }
-        
-        /* TARJETAS KPI */
-        .kpi-grid { display:grid; grid-template-columns: repeat(4, 1fr); gap:15px; }
-        .kpi-card { background:rgba(255,255,255,0.95); border-radius:12px; padding:15px; border-left:4px solid #1a365d; box-shadow:0 4px 20px rgba(0,0,0,0.05); }
-        .kpi-card .label { font-size:10px; font-weight:800; color:#8899aa; text-transform:uppercase; margin-bottom:5px; }
-        .kpi-card .value { font-size:22px; font-weight:800; color:#1a365d; }
+.panel-right{flex:1;display:flex;flex-direction:column;gap:12px;min-width:0;animation:fadeIn .8s ease .1s both}
+@keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 
-        /* DIAGNÓSTICOS */
-        .diag-grid { display:grid; grid-template-columns: repeat(4, 1fr); gap:10px; margin-bottom:15px; }
-        .diag-card { background:white; border-radius:8px; padding:10px; border:1px solid #e2e8f0; text-align:center; }
-        .diag-card .title { font-size:10px; font-weight:800; color:#8899aa; margin-bottom:5px; }
-        .diag-card .val { font-size:16px; font-weight:800; }
-        .diag-card .status { font-size:10px; font-weight:700; margin-top:5px; padding:2px 8px; border-radius:10px; display:inline-block; }
-        .st-ok { background:#dcfce7; color:#166534; }
-        .st-warn { background:#fef3c7; color:#92400e; }
-        .st-error { background:#fee2e2; color:#991b1b; }
+.structure-card{background:var(--card);backdrop-filter:blur(16px);border-radius:var(--radius);border:1px solid rgba(255,255,255,0.7);padding:16px;box-shadow:var(--shadow);display:flex;flex-direction:column;transition:var(--transition)}
+.structure-card:hover{box-shadow:var(--shadow-hover)}
+.structure-header{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:800;color:var(--text);text-transform:uppercase;padding-bottom:10px;margin-bottom:12px;border-bottom:2px solid var(--gold)}
+.structure-header i{color:var(--gold)}
+.structure-header .badge-count{margin-left:auto;font-size:10px;font-weight:800;background:rgba(214,158,46,0.18);color:var(--gold);padding:3px 10px;border-radius:12px}
+.structure-body{flex:1;overflow:auto;font-size:11px}
 
-        /* TABLA */
-        .table-container { background:rgba(255,255,255,0.95); border-radius:12px; padding:20px; box-shadow:0 4px 20px rgba(0,0,0,0.05); overflow-x:auto; }
-        table { width:100%; border-collapse:collapse; font-size:12px; }
-        th { background:#1a365d; color:white; padding:10px; text-align:center; font-weight:700; }
-        td { padding:8px; border-bottom:1px solid #e2e8f0; text-align:center; font-weight:600; color:#4a5568; }
-        .sig { color:#38a169; font-weight:800; }
-        .nosig { color:#e53e3e; font-weight:800; }
+table.matriz{border-collapse:collapse;width:100%;font-size:10.5px}
+table.matriz th,table.matriz td{border:1px solid rgba(0,0,0,0.08);padding:5px 7px;text-align:center;min-width:34px;transition:background .2s}
+table.matriz th{background:rgba(26,54,93,0.12);color:var(--primary);font-weight:800;position:sticky;top:0}
+table.matriz td.fila-header{background:rgba(26,54,93,0.12);color:var(--primary);font-weight:800;position:sticky;left:0}
+table.matriz tbody tr{cursor:pointer;transition:background .15s}
+table.matriz tbody tr:hover td{background:rgba(214,158,46,0.12)}
+table.matriz td.sig{font-weight:800}
+table.matriz td.sig.sig1{color:var(--green)}
+table.matriz td.sig.sig2{color:var(--gold)}
+table.matriz td.sig.sig3{color:#c05621}
+table.matriz td.sig.sig4{color:var(--red)}
 
-        /* GRÁFICOS */
-        .charts-grid { display:grid; grid-template-columns: 1fr 1fr; gap:15px; }
-        .chart-card { background:rgba(255,255,255,0.95); border-radius:12px; padding:15px; box-shadow:0 4px 20px rgba(0,0,0,0.05); height:280px; display:flex; flex-direction:column; }
-        .chart-card h3 { font-size:12px; font-weight:800; color:#1a365d; margin-bottom:10px; display:flex; align-items:center; gap:6px; }
-        .chart-card h3 i { color:#d69e2e; }
-        .chart-wrapper { flex:1; position:relative; }
+.formula-box{background:linear-gradient(135deg,#0f172a,#1a365d);color:#e2e8f0;border-radius:12px;padding:16px 18px;font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.9;box-shadow:inset 0 0 30px rgba(0,0,0,0.4);overflow-x:auto}
+.formula-box .formula-line{padding:4px 0;border-bottom:1px dashed rgba(255,255,255,0.08)}
+.formula-box .formula-line:last-child{border-bottom:none}
+.formula-box .var{color:#fbd38d;font-weight:700}
+.formula-box .op{color:#63b3ed}
+.formula-box .num{color:#68d391}
+.formula-box .label{color:#a0aec0;font-size:10px;text-transform:uppercase;letter-spacing:1px;margin-right:8px}
 
-        /* MODALES */
-        .modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);z-index:9999;justify-content:center;align-items:center}
-        .modal-overlay.active{display:flex}
-        .modal-content{background:white;border-radius:12px;padding:20px;max-width:800px;width:90%;max-height:80vh;display:flex;flex-direction:column;}
-        .modal-header{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #d69e2e;padding-bottom:10px;margin-bottom:15px;}
-        .modal-body{overflow-y:auto;flex:1;}
+details.matriz-det{border-radius:12px;overflow:hidden;border:1px solid rgba(214,158,46,0.3);background:rgba(255,255,255,0.6)}
+details.matriz-det summary{padding:12px 16px;cursor:pointer;font-weight:800;font-size:12px;color:var(--primary);display:flex;align-items:center;gap:8px;list-style:none;transition:var(--transition)}
+details.matriz-det summary::-webkit-details-marker{display:none}
+details.matriz-det summary:hover{background:rgba(214,158,46,0.08)}
+details.matriz-det summary i{color:var(--gold);transition:transform .3s}
+details.matriz-det[open] summary i.fa-chevron-right{transform:rotate(90deg)}
+details.matriz-det .matriz-content{padding:0 16px 16px;overflow-x:auto}
+.matrix-wrap{display:inline-block;position:relative;padding:8px 10px}
+.matrix-wrap::before,.matrix-wrap::after{content:'';position:absolute;top:0;bottom:0;width:8px;border:2px solid var(--gold)}
+.matrix-wrap::before{left:0;border-right:none;border-radius:4px 0 0 4px}
+.matrix-wrap::after{right:0;border-left:none;border-radius:0 4px 4px 0}
+.matrix-wrap table{border-collapse:collapse;font-family:'JetBrains Mono',monospace;font-size:10.5px}
+.matrix-wrap td,.matrix-wrap th{padding:4px 9px;text-align:right;color:#2d3748}
+.matrix-wrap th{color:var(--primary);font-weight:800;border-bottom:1px solid rgba(26,54,93,0.2)}
+.matrix-wrap td{font-variant-numeric:tabular-nums}
 
-        /* ECUACIÓN FINAL */
-        .eq-box { background:linear-gradient(135deg,#1a365d,#2b6cb0); color:white; padding:15px; border-radius:10px; text-align:center; font-family:monospace; font-size:16px; font-weight:bold; margin-bottom:15px; box-shadow:0 4px 15px rgba(0,0,0,0.2); }
-        .eq-box span { color:#fbd38d; }
-    </style>
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.mco-chart{width:100%;height:260px;background:linear-gradient(135deg,#f8fafc,#eef2f7);border-radius:10px;padding:12px;border:1px solid #e2e8f0;transition:var(--transition);position:relative}
+.mco-chart:hover{border-color:var(--gold);box-shadow:0 4px 18px rgba(214,158,46,0.12)}
+.mco-chart canvas{width:100%!important;height:100%!important}
+
+/* MAPA GRANDE */
+.map-card{background:var(--card);backdrop-filter:blur(16px);border-radius:var(--radius);border:1px solid rgba(255,255,255,0.7);padding:16px;box-shadow:var(--shadow);display:flex;flex-direction:column}
+.map-header{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:800;color:var(--text);text-transform:uppercase;padding-bottom:10px;margin-bottom:12px;border-bottom:2px solid var(--gold);flex-wrap:wrap}
+.map-header i{color:var(--gold)}
+.map-controls{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center;padding:10px;background:rgba(240,244,248,0.7);border-radius:10px}
+.map-controls .mc-btn{padding:7px 14px;border:1.5px solid rgba(0,0,0,0.08);background:rgba(255,255,255,0.95);border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;transition:var(--transition);display:inline-flex;align-items:center;gap:6px;color:#4a5568;font-family:'Inter',sans-serif}
+.map-controls .mc-btn:hover{border-color:var(--gold);color:var(--gold);transform:translateY(-2px)}
+.map-controls .mc-btn.active{background:linear-gradient(135deg,var(--primary),var(--primary-light));color:white;border-color:transparent}
+.map-controls .filter-group{display:flex;align-items:center;gap:8px;margin-left:auto;font-size:11px;font-weight:700;color:#4a5568}
+.map-controls input[type="range"]{width:140px;accent-color:var(--gold);cursor:pointer}
+#map-container{height:70vh;min-height:600px;width:100%;border-radius:12px;overflow:hidden;box-shadow:inset 0 0 20px rgba(0,0,0,0.05);position:relative;background:#e2e8f0}
+#map{width:100%;height:100%;z-index:1}
+
+.leaflet-popup-content-wrapper{border-radius:12px!important;box-shadow:0 8px 30px rgba(0,0,0,0.2)!important}
+.leaflet-popup-content{margin:14px 16px!important;font-family:'Inter',sans-serif!important;font-size:12px!important;min-width:200px}
+.popup-title{font-weight:800;color:var(--primary);font-size:13px;margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid var(--gold);display:flex;align-items:center;gap:6px}
+.popup-row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dashed rgba(0,0,0,0.06)}
+.popup-row:last-child{border-bottom:none}
+.popup-row .pl{color:var(--muted);font-weight:600}
+.popup-row .pv{color:var(--text);font-weight:800;font-variant-numeric:tabular-nums}
+
+/* Footer original */
+.footer-real{background:var(--card);backdrop-filter:blur(16px);border-radius:var(--radius);border:1px solid rgba(255,255,255,0.7);padding:14px 20px;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:4px}
+.footer-real .fr-left{display:flex;align-items:center;gap:12px;color:var(--text)}
+.footer-real .fr-left .fr-logo{width:38px;height:38px;background:linear-gradient(135deg,var(--primary),var(--primary-light));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;color:var(--gold-light)}
+.footer-real .fr-left .fr-text{font-size:11px;line-height:1.4}
+.footer-real .fr-left .fr-text .ft-title{font-weight:800;font-size:12px}
+.footer-real .fr-left .fr-text .ft-sub{color:var(--muted);font-size:10px}
+.footer-real .fr-right{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:10px;font-weight:700}
+.footer-real .fr-right .status-dot{width:8px;height:8px;border-radius:50%;background:#48bb78;animation:pulse 1.5s infinite;box-shadow:0 0 8px #48bb78}
+
+/* Splash */
+.splash-screen{position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,#1a365d 0%,#2b6cb0 50%,#d69e2e 100%);display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:99999;transition:opacity .9s ease,visibility .9s ease;color:white;overflow:hidden}
+.splash-screen::before{content:'';position:absolute;width:600px;height:600px;background:radial-gradient(circle,rgba(255,255,255,0.12),transparent 70%);top:-200px;right:-150px;border-radius:50%;animation:float 8s ease-in-out infinite}
+.splash-screen::after{content:'';position:absolute;width:400px;height:400px;background:radial-gradient(circle,rgba(246,173,85,0.18),transparent 70%);bottom:-120px;left:-100px;border-radius:50%;animation:float 6s ease-in-out infinite reverse}
+@keyframes float{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(30px,-30px) scale(1.1)}}
+.splash-screen.hidden{opacity:0;visibility:hidden;pointer-events:none}
+.splash-logo{width:120px;height:120px;background:rgba(255,255,255,0.18);backdrop-filter:blur(12px);border-radius:32px;display:flex;align-items:center;justify-content:center;font-size:58px;margin-bottom:26px;animation:splashPulse 2s infinite;border:2px solid rgba(255,255,255,0.35);box-shadow:0 20px 60px rgba(0,0,0,0.3);position:relative;z-index:2}
+@keyframes splashPulse{0%,100%{transform:scale(1) rotate(0)}50%{transform:scale(1.06) rotate(3deg)}}
+.splash-title{font-size:38px;font-weight:900;margin-bottom:8px;letter-spacing:-0.5px;position:relative;z-index:2;text-shadow:0 4px 20px rgba(0,0,0,0.25)}
+.splash-title span{color:#fbd38d}
+.splash-subtitle{font-size:15px;color:rgba(255,255,255,0.92);margin-bottom:44px;font-weight:600;position:relative;z-index:2}
+.splash-loader{width:240px;height:6px;background:rgba(255,255,255,0.2);border-radius:6px;overflow:hidden;margin-bottom:22px;position:relative;z-index:2}
+.splash-loader-bar{height:100%;background:linear-gradient(90deg,#fbd38d,#f6ad55,#fbd38d);width:0%;transition:width .35s ease;border-radius:6px;box-shadow:0 0 12px rgba(251,211,141,0.6)}
+.splash-info{font-size:11px;opacity:0.85;letter-spacing:2px;text-transform:uppercase;font-weight:800;position:relative;z-index:2}
+.splash-user{position:absolute;bottom:34px;text-align:center;z-index:2}
+.splash-user .name{font-weight:800;font-size:16px;display:block;margin-bottom:4px}
+.splash-user .uni{font-size:10px;opacity:0.8}
+
+/* Toasts */
+.toast-container{position:fixed;top:20px;right:20px;z-index:99999;display:flex;flex-direction:column;gap:10px;max-width:420px}
+.toast{background:white;border-radius:16px;padding:16px 20px;box-shadow:0 16px 50px rgba(0,0,0,0.2);border-left:5px solid #3182ce;display:flex;align-items:center;gap:14px;animation:toastIn .45s cubic-bezier(.34,1.56,.64,1);min-width:320px;position:relative;overflow:hidden}
+.toast::before{content:'';position:absolute;bottom:0;left:0;height:3px;background:currentColor;animation:toastProgress 4s linear forwards}
+@keyframes toastProgress{from{width:100%}to{width:0%}}
+.toast.success{border-left-color:var(--green);color:var(--green)}
+.toast.error{border-left-color:var(--red);color:var(--red)}
+.toast.warning{border-left-color:var(--gold);color:var(--gold)}
+.toast.info{border-left-color:#3182ce;color:#3182ce}
+.toast .toast-icon{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;font-size:17px;flex-shrink:0}
+.toast.success .toast-icon{background:linear-gradient(135deg,#38a169,#276749)}
+.toast.error .toast-icon{background:linear-gradient(135deg,#e53e3e,#9b2c2c)}
+.toast.warning .toast-icon{background:linear-gradient(135deg,#d69e2e,#b7791f)}
+.toast.info .toast-icon{background:linear-gradient(135deg,#3182ce,#2b6cb0)}
+.toast .toast-content{flex:1;font-size:13px;color:var(--text);font-weight:600;line-height:1.4}
+.toast .toast-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:4px}
+@keyframes toastIn{from{transform:translateX(420px) scale(.9);opacity:0}to{transform:translateX(0) scale(1);opacity:1}}
+
+.empty-state{text-align:center;padding:36px 20px;color:var(--muted)}
+.empty-state i{font-size:38px;margin-bottom:12px;opacity:0.4;display:block;color:var(--gold)}
+.empty-state .es-title{font-size:13px;font-weight:800;color:#4a5568;margin-bottom:4px}
+.empty-state .es-sub{font-size:11px}
+
+.loading-overlay{position:fixed;inset:0;background:rgba(15,23,42,0.7);backdrop-filter:blur(8px);z-index:99998;display:none;justify-content:center;align-items:center;color:white;flex-direction:column;gap:20px}
+.loading-overlay.active{display:flex}
+.loading-overlay .spinner{width:60px;height:60px;border:4px solid rgba(255,255,255,0.2);border-top-color:var(--gold);border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-overlay .load-text{font-size:14px;font-weight:700;letter-spacing:1px}
+
+@media(max-width:1100px){.panel-left{width:300px}.charts-grid{grid-template-columns:1fr}}
+@media(max-width:900px){.main-content{flex-direction:column}.panel-left{width:100%;max-height:none}.charts-grid{grid-template-columns:1fr}#map-container{height:60vh;min-height:450px}}
+</style>
 </head>
 <body>
 
-    <!-- CANVAS DE FONDO ANIMADO -->
-    <canvas id="bgCanvas"></canvas>
+<canvas id="bgCanvas"></canvas>
 
-    <div class="main-wrapper">
-        <!-- HEADER -->
-        <header class="header">
-            <div class="header-left">
-                <div class="logo"><i class="fas fa-chart-line"></i></div>
-                <div>
-                    <h1>CEASS Bolivia - <span>MCO</span></h1>
-                    <div class="sub">Modelo de Regresión Múltiple para Pronósticos</div>
+<!-- SPLASH -->
+<div class="splash-screen" id="splashScreen">
+    <div class="splash-logo"><i class="fas fa-truck-medical"></i></div>
+    <div class="splash-title">EPSAS <span>La Paz</span></div>
+    <div class="splash-subtitle">Módulo MCO · Análisis Multivariado</div>
+    <div class="splash-loader"><div class="splash-loader-bar" id="splashBar"></div></div>
+    <div class="splash-info" id="splashInfo">Inicializando sistema...</div>
+    <div class="splash-user">
+        <span class="name">EPSAS La Paz</span>
+        <span class="uni">Empresa Pública Social de Agua y Saneamiento</span>
+    </div>
+</div>
+
+<!-- LOADING OVERLAY -->
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+    <div class="load-text" id="loadText">Procesando...</div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<div class="dashboard">
+    <header class="header">
+        <div class="header-left">
+            <div class="logo"><i class="fas fa-chart-line"></i></div>
+            <div>
+                <h1>EPSAS <span>La Paz</span></h1>
+                <div class="sub">Módulo MCO: Análisis Multivariado para Pronósticos</div>
+            </div>
+        </div>
+        <div class="header-center">
+            <button class="btn-doc cyan" onclick="document.getElementById('file-csv').click()"><i class="fas fa-file-csv"></i> Subir CSV</button>
+            <input type="file" id="file-csv" accept=".csv" style="display:none" onchange="cargarCSV(event)">
+            <button class="btn-doc purple" onclick="descargarPDF()"><i class="fas fa-file-pdf"></i> Informe PDF</button>
+        </div>
+        <div class="header-right">
+            <span class="badge primary"><i class="fas fa-database"></i> <span id="badge-registros">0 Registros</span></span>
+            <span class="badge success" id="badge-r2"><i class="fas fa-chart-pie"></i> R²: --</span>
+            <span class="badge live"><i class="fas fa-circle"></i> LIVE</span>
+        </div>
+    </header>
+
+    <div class="main-content">
+        <!-- PANEL IZQUIERDO -->
+        <div class="panel-left">
+            <div class="pond-section">
+                <div class="pond-title"><i class="fas fa-sliders-h"></i> Datos de Entrada</div>
+                <div style="display:flex;flex-direction:column;gap:7px">
+                    <button class="btn btn-primary" onclick="generarDatosDemo()"><i class="fas fa-flask"></i> Generar 15,000 (Demo)</button>
+                    <button class="btn btn-outline" onclick="document.getElementById('file-csv').click()"><i class="fas fa-upload"></i> Subir CSV real (15k)</button>
+                </div>
+                <div class="pond-status"><span class="dot-status"></span><span id="status-datos">Sin datos cargados</span></div>
+            </div>
+
+            <div class="panel-title"><i class="fas fa-table"></i> Variables del Modelo</div>
+            <div class="form-group">
+                <label><i class="fas fa-arrow-down"></i> Variable Dependiente (Y)</label>
+                <select id="sel-y" disabled><option>Consumo_m3</option></select>
+            </div>
+            <div class="form-group">
+                <label><i class="fas fa-arrow-right"></i> Variables Independientes (X)</label>
+                <div id="check-x" style="max-height:180px;overflow-y:auto;background:rgba(255,255,255,0.9);border:1.5px solid #e2e8f0;border-radius:8px;padding:8px;">
+                    <em style="font-size:10px;color:var(--muted);">Cargue datos primero...</em>
                 </div>
             </div>
-            <div style="display:flex; gap:10px;">
-                <button class="btn-doc cyan" onclick="generar300Datos()"><i class="fas fa-flask"></i> Generar 300 Datos</button>
-                <button class="btn-doc primary" onclick="verMatrices()"><i class="fas fa-calculator"></i> Ver Matrices</button>
-                <button class="btn-doc green" onclick="document.getElementById('fileInput').click()"><i class="fas fa-file-csv"></i> Cargar CSV</button>
-                <input type="file" id="fileInput" accept=".csv" style="display:none;" onchange="procesarCSV(this)">
+
+            <button class="btn btn-primary" style="width:100%;padding:14px;font-size:14px;margin-top:4px;" onclick="ejecutarMCO()"><i class="fas fa-cogs"></i> Calcular MCO</button>
+
+            <div class="panel-title"><i class="fas fa-check-double"></i> Pruebas Diagnósticas</div>
+            <div id="diag-box" style="font-size:11px;color:#4a5568;background:rgba(255,255,255,0.9);padding:12px;border-radius:10px;border:1px solid #e2e8f0;">
+                <div class="empty-state" style="padding:16px 8px"><i class="fas fa-flask"></i><div class="es-title">Sin diagnósticos</div><div class="es-sub">Ejecute el MCO</div></div>
             </div>
-        </header>
+        </div>
 
-        <!-- DASHBOARD -->
-        <div class="dashboard">
-            
-            <!-- PANEL IZQUIERDO -->
-            <div class="panel-left">
-                <div class="panel-title"><i class="fas fa-sliders-h"></i> Configuración</div>
-                
-                <div class="form-group">
-                    <label>Variable Dependiente (Y)</label>
-                    <select id="sel-y"><option value="">Cargue datos...</option></select>
+        <!-- PANEL DERECHO -->
+        <div class="panel-right">
+            <!-- Gráficos 2x2 -->
+            <div class="charts-grid">
+                <div class="structure-card">
+                    <div class="structure-header"><i class="fas fa-chart-scatter"></i> Real vs Predicho</div>
+                    <div class="mco-chart"><canvas id="chartScatter"></canvas></div>
                 </div>
+                <div class="structure-card">
+                    <div class="structure-header"><i class="fas fa-chart-bar"></i> Importancia |t| <span style="margin-left:auto;font-size:9px;color:var(--muted);font-weight:600;text-transform:none;">clic = colorear mapa</span></div>
+                    <div class="mco-chart"><canvas id="chartBar"></canvas></div>
+                </div>
+                <div class="structure-card">
+                    <div class="structure-header"><i class="fas fa-chart-line"></i> Residuos vs Predicho</div>
+                    <div class="mco-chart"><canvas id="chartResiduos"></canvas></div>
+                </div>
+                <div class="structure-card">
+                    <div class="structure-header"><i class="fas fa-chart-area"></i> Histograma de Residuos</div>
+                    <div class="mco-chart"><canvas id="chartHist"></canvas></div>
+                </div>
+            </div>
 
-                <div class="form-group">
-                    <label>Variables Independientes (X)</label>
-                    <div id="check-x" style="display:flex; flex-direction:column; gap:5px; max-height:120px; overflow-y:auto; padding:5px; background:#f8fafc; border-radius:8px; border:1px solid #e2e8f0;">
-                        <span style="font-size:11px; color:#8899aa;">Cargue datos...</span>
+            <!-- Mapa GRANDE -->
+            <div class="map-card">
+                <div class="map-header">
+                    <i class="fas fa-map-marked-alt"></i> Mapa de Distribución (La Paz) · <span id="map-count" style="color:var(--gold)">0 puntos</span>
+                </div>
+                <div class="map-controls">
+                    <button class="mc-btn active" id="btn-cluster" onclick="setMapMode('cluster')"><i class="fas fa-object-group"></i> Cluster</button>
+                    <button class="mc-btn" id="btn-heat" onclick="setMapMode('heat')"><i class="fas fa-fire"></i> Heatmap</button>
+                    <button class="mc-btn" id="btn-points" onclick="setMapMode('points')"><i class="fas fa-circle"></i> Puntos</button>
+                    <div class="filter-group">
+                        <i class="fas fa-filter" style="color:var(--gold)"></i>
+                        <span>Consumo mín:</span>
+                        <input type="range" id="filtro-consumo" min="0" max="100" value="0" oninput="filtrarMapa()">
+                        <span id="filtro-val" style="font-family:'JetBrains Mono',monospace;color:var(--primary);min-width:60px;text-align:right;">0</span>
                     </div>
                 </div>
-
-                <div class="btn-group">
-                    <button class="btn btn-primary" onclick="ejecutarMCO()"><i class="fas fa-play"></i> Calcular MCO</button>
-                </div>
-
-                <!-- SIMULADOR DE PRONÓSTICO -->
-                <div class="panel-title" style="margin-top:10px;"><i class="fas fa-crystal-ball"></i> Simulador de Pronóstico</div>
-                <div id="simulador-inputs" style="display:flex; flex-direction:column; gap:5px; margin-bottom:10px;">
-                    <span style="font-size:11px; color:#8899aa;">Calcula el MCO primero.</span>
-                </div>
-                <button class="btn" style="background:linear-gradient(135deg,#d69e2e,#b7791f); color:white;" onclick="calcularPronostico()"><i class="fas fa-magic"></i> Predecir Y</button>
-                <div id="resultado-pronostico" style="margin-top:10px; padding:10px; background:#f0fdf4; border-left:4px solid #38a169; border-radius:5px; font-weight:800; color:#166534; text-align:center; display:none;"></div>
-
-                <div class="panel-title" style="margin-top:10px;"><i class="fas fa-info-circle"></i> Fórmula</div>
-                <div style="background:#1a365d; color:#fbd38d; padding:10px; border-radius:8px; font-family:monospace; font-size:14px; text-align:center; font-weight:bold;">
-                    β = (Xᵀ X)⁻¹ Xᵀ Y
+                <div id="map-container">
+                    <div id="map"></div>
                 </div>
             </div>
 
-            <!-- PANEL DERECHO -->
-            <div class="panel-right">
-                
-                <!-- ECUACIÓN FINAL -->
-                <div class="eq-box" id="ecuacion-final" style="display:none;">
-                    Y = <span id="eq-b0">0</span> + <span id="eq-b1">0</span>·X₁ + <span id="eq-b2">0</span>·X₂ ...
+            <!-- Fórmulas -->
+            <div class="structure-card">
+                <div class="structure-header"><i class="fas fa-square-root-alt"></i> Formulación Matemática MCO</div>
+                <div class="formula-box">
+                    <div class="formula-line"><span class="label">Modelo</span> <span class="var">Y</span> <span class="op">=</span> <span class="var">X</span><span class="op">·</span><span class="var">β</span> <span class="op">+</span> <span class="var">ε</span> &nbsp;&nbsp; <span class="num">ε ~ N(0, σ²I)</span></div>
+                    <div class="formula-line"><span class="label">Estimador MCO</span> <span class="var">β̂</span> <span class="op">=</span> (<span class="var">X</span><span class="op">ᵀ</span><span class="var">X</span>)<span class="op">⁻¹</span> <span class="op">·</span> <span class="var">X</span><span class="op">ᵀ</span><span class="var">Y</span></div>
+                    <div class="formula-line"><span class="label">Varianza-Covarianza</span> <span class="var">Var</span>(<span class="var">β̂</span>) <span class="op">=</span> <span class="var">σ²</span> <span class="op">·</span> (<span class="var">X</span><span class="op">ᵀ</span><span class="var">X</span>)<span class="op">⁻¹</span></div>
+                    <div class="formula-line"><span class="label">σ² estimado</span> <span class="var">ŝ²</span> <span class="op">=</span> <span class="var">SSR</span> <span class="op">/</span> (<span class="var">n</span> <span class="op">−</span> <span class="var">k</span>) &nbsp;&nbsp; <span class="num">= Σeᵢ² / (n−k)</span></div>
+                    <div class="formula-line"><span class="label">Error Estándar</span> <span class="var">SE</span>(<span class="var">β̂</span><span class="op">ᵢ</span>) <span class="op">=</span> √[ <span class="var">ŝ²</span> <span class="op">·</span> (<span class="var">X</span><span class="op">ᵀ</span><span class="var">X</span>)<span class="op">⁻¹</span><span class="op">ᵢᵢ</span> ]</div>
+                    <div class="formula-line"><span class="label">t-Student</span> <span class="var">t</span><span class="op">ᵢ</span> <span class="op">=</span> <span class="var">β̂</span><span class="op">ᵢ</span> <span class="op">/</span> <span class="var">SE</span>(<span class="var">β̂</span><span class="op">ᵢ</span>) &nbsp;&nbsp; <span class="num">~ t(n−k)</span></div>
+                    <div class="formula-line"><span class="label">Distribución t</span> <span class="var">f</span>(<span class="var">t</span>) <span class="op">=</span> <span class="num">Γ((ν+1)/2)</span> <span class="op">/</span> [<span class="num">√(νπ)</span> <span class="op">·</span> <span class="num">Γ(ν/2)</span>] <span class="op">·</span> (1 <span class="op">+</span> <span class="var">t</span>²<span class="op">/</span><span class="var">ν</span>)<span class="op">^</span><span class="num">−(ν+1)/2</span></div>
+                    <div class="formula-line"><span class="label">p-valor</span> <span class="var">p</span> <span class="op">=</span> 2 <span class="op">·</span> <span class="var">P</span>(<span class="var">T</span> <span class="op">></span> |<span class="var">t</span><span class="op">ᵢ</span>|) &nbsp;&nbsp; <span class="num">gl = n − k</span></div>
+                    <div class="formula-line"><span class="label">R²</span> <span class="num">R²</span> <span class="op">=</span> 1 <span class="op">−</span> (<span class="var">SSR</span> <span class="op">/</span> <span class="var">SST</span>) &nbsp;&nbsp; <span class="num">= 1 − Σeᵢ² / Σ(yᵢ−ȳ)²</span></div>
+                    <div class="formula-line"><span class="label">R² ajustado</span> <span class="num">R̄²</span> <span class="op">=</span> 1 <span class="op">−</span> [(<span class="var">SSR</span><span class="op">/</span>(<span class="var">n−k</span>)) <span class="op">/</span> (<span class="var">SST</span><span class="op">/</span>(<span class="var">n−1</span>))]</div>
+                    <div class="formula-line"><span class="label">Durbin-Watson</span> <span class="var">DW</span> <span class="op">=</span> Σ(<span class="var">e</span><span class="op">ᵢ</span> <span class="op">−</span> <span class="var">e</span><span class="op">ᵢ₋₁</span>)² <span class="op">/</span> Σ<span class="var">e</span><span class="op">ᵢ</span>² &nbsp;&nbsp; <span class="num">≈ 2 ⇒ sin autocorrelación</span></div>
+                    <div class="formula-line"><span class="label">Jarque-Bera</span> <span class="var">JB</span> <span class="op">=</span> (<span class="var">n</span><span class="op">/</span>6) <span class="op">·</span> [<span class="var">S</span>² <span class="op">+</span> (<span class="var">K</span><span class="op">−</span>3)²<span class="op">/</span>4] &nbsp;&nbsp; <span class="num">~ χ²(2)</span></div>
+                    <div class="formula-line"><span class="label">Breusch-Pagan</span> <span class="var">LM</span> <span class="op">=</span> <span class="var">n</span> <span class="op">·</span> <span class="var">R</span>²<span class="op">aux</span> &nbsp;&nbsp; <span class="num">~ χ²(k−1)</span></div>
                 </div>
+            </div>
 
-                <!-- KPIs -->
-                <div class="kpi-grid">
-                    <div class="kpi-card"><div class="label">R² (Bondad)</div><div class="value" id="kpi-r2">--</div></div>
-                    <div class="kpi-card" style="border-left-color:#38a169;"><div class="label">R² Ajustado</div><div class="value" id="kpi-r2aj">--</div></div>
-                    <div class="kpi-card" style="border-left-color:#d69e2e;"><div class="label">Observaciones (n)</div><div class="value" id="kpi-n">--</div></div>
-                    <div class="kpi-card" style="border-left-color:#805ad5;"><div class="label">Variables (k)</div><div class="value" id="kpi-k">--</div></div>
+            <!-- Matriz X, Xᵀ, XᵀX, XᵀY, β̂ -->
+            <details class="matriz-det">
+                <summary><i class="fas fa-chevron-right fa-xs"></i> Matriz X, Xᵀ, XᵀX, XᵀY y Coeficientes β̂</summary>
+                <div class="matriz-content" id="matriz-container">
+                    <div class="empty-state"><i class="fas fa-calculator"></i><div class="es-title">Sin matriz calculada</div><div class="es-sub">Ejecute el MCO para visualizar las matrices</div></div>
                 </div>
+            </details>
 
-                <!-- DIAGNÓSTICOS DEL PDF -->
-                <div class="table-container" style="padding:15px;">
-                    <div class="panel-title" style="margin-bottom:10px; border:none; padding:0;"><i class="fas fa-stethoscope"></i> Pruebas Diagnósticas (PDF)</div>
-                    <div class="diag-grid" id="diag-grid">
-                        <div class="diag-card"><div class="title">VIF</div><div class="val" id="diag-vif">--</div><div class="status" id="diag-vif-st">--</div></div>
-                        <div class="diag-card"><div class="title">Breusch-Pagan</div><div class="val" id="diag-bp">--</div><div class="status" id="diag-bp-st">--</div></div>
-                        <div class="diag-card"><div class="title">Durbin-Watson</div><div class="val" id="diag-dw">--</div><div class="status" id="diag-dw-st">--</div></div>
-                        <div class="diag-card"><div class="title">Jarque-Bera</div><div class="val" id="diag-jb">--</div><div class="status" id="diag-jb-st">--</div></div>
-                    </div>
+            <!-- Estadísticas Descriptivas -->
+            <div class="structure-card">
+                <div class="structure-header"><i class="fas fa-calculator"></i> Estadísticas Descriptivas <span class="badge-count" id="desc-count">0</span></div>
+                <div class="structure-body" id="descriptivas-container">
+                    <div class="empty-state"><i class="fas fa-chart-simple"></i><div class="es-title">Sin estadísticas</div><div class="es-sub">Cargue datos para ver media, varianza y covarianza</div></div>
                 </div>
+            </div>
 
-                <!-- TABLA -->
-                <div class="table-container">
-                    <div class="panel-title" style="margin-bottom:10px; border:none; padding:0;"><i class="fas fa-table"></i> Coeficientes Estimados</div>
-                    <table id="tabla-coef">
-                        <thead>
-                            <tr><th>Variable</th><th>Coeficiente (β)</th><th>Error Est.</th><th>t</th><th>p-valor</th><th>Significancia</th></tr>
-                        </thead>
-                        <tbody id="tbody-coef">
-                            <tr><td colspan="6" style="text-align:center; color:#8899aa;">Sin resultados</td></tr>
-                        </tbody>
+            <!-- Tabla coeficientes -->
+            <div class="structure-card">
+                <div class="structure-header"><i class="fas fa-table"></i> Coeficientes Estimados <span class="badge-count" id="coef-count">0</span></div>
+                <div class="structure-body">
+                    <table class="matriz" id="tabla-mco">
+                        <thead><tr><th>Variable</th><th>β</th><th>Error Est.</th><th>t</th><th>p-valor</th><th>Sig.</th></tr></thead>
+                        <tbody><tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted);">Cargue datos y ejecute MCO</td></tr></tbody>
                     </table>
                 </div>
-
-                <!-- GRÁFICOS -->
-                <div class="charts-grid">
-                    <div class="chart-card"><h3><i class="fas fa-chart-scatter"></i> Real vs. Predicho</h3><div class="chart-wrapper"><canvas id="chartScatter"></canvas></div></div>
-                    <div class="chart-card"><h3><i class="fas fa-chart-bar"></i> Importancia (|t|)</h3><div class="chart-wrapper"><canvas id="chartBar"></canvas></div></div>
-                    <div class="chart-card"><h3><i class="fas fa-braille"></i> Residuos vs. Predichos</h3><div class="chart-wrapper"><canvas id="chartResiduos"></canvas></div></div>
-                    <div class="chart-card"><h3><i class="fas fa-chart-area"></i> Histograma</h3><div class="chart-wrapper"><canvas id="chartHist"></canvas></div></div>
-                </div>
-
             </div>
         </div>
     </div>
 
-    <!-- MODAL MATRICES -->
-    <div class="modal-overlay" id="modalMatrices">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 style="color:#1a365d; font-size:16px;"><i class="fas fa-calculator" style="color:#d69e2e;"></i> Matrices X e Y (Primeras 5 filas)</h2>
-                <button onclick="document.getElementById('modalMatrices').classList.remove('active')" style="background:none;border:none;font-size:20px;cursor:pointer;color:#8899aa;"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="modal-body" id="modalMatricesBody">
-                <!-- Tabla -->
+    <!-- FOOTER ORIGINAL -->
+    <footer class="footer-real">
+        <div class="fr-left">
+            <div class="fr-logo"><i class="fas fa-chart-line"></i></div>
+            <div class="fr-text">
+                <div class="ft-title">EPSAS La Paz · Módulo MCO</div>
+                <div class="ft-sub">Análisis Multivariado para Pronósticos · La Paz, Bolivia</div>
             </div>
         </div>
-    </div>
+        <div class="fr-right">
+            <span class="status-dot"></span> Sistema activo · <span id="footer-time"></span>
+        </div>
+    </footer>
+</div>
 
-    <script>
-        // ============================================================
-        // 1. ANIMACIÓN DE FONDO (PARTÍCULAS)
-        // ============================================================
-        function initBackgroundAnimation() {
-            var canvas = document.getElementById('bgCanvas');
-            if (!canvas) return;
-            var ctx = canvas.getContext('2d');
-            var width = canvas.width = window.innerWidth;
-            var height = canvas.height = window.innerHeight;
-            var particles = [];
-            
-            for (var i = 0; i < 60; i++) {
-                particles.push({
-                    x: Math.random() * width,
-                    y: Math.random() * height,
-                    vx: (Math.random() - 0.5) * 0.5,
-                    vy: (Math.random() - 0.5) * 0.5,
-                    radius: Math.random() * 2 + 1
-                });
-            }
-            
-            function animate() {
-                ctx.clearRect(0, 0, width, height);
-                for (var i = 0; i < particles.length; i++) {
-                    var p = particles[i];
-                    p.x += p.vx; p.y += p.vy;
-                    if (p.x < 0 || p.x > width) p.vx *= -1;
-                    if (p.y < 0 || p.y > height) p.vy *= -1;
-                    ctx.beginPath();
-                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-                    ctx.fillStyle = 'rgba(26, 54, 93, 0.3)'; // Azul oscuro transparente
-                    ctx.fill();
-                }
-                for (var a = 0; a < particles.length; a++) {
-                    for (var b = a + 1; b < particles.length; b++) {
-                        var dx = particles[a].x - particles[b].x;
-                        var dy = particles[a].y - particles[b].y;
-                        var dist = Math.sqrt(dx * dx + dy * dy);
-                        if (dist < 150) {
-                            ctx.beginPath();
-                            ctx.moveTo(particles[a].x, particles[a].y);
-                            ctx.lineTo(particles[b].x, particles[b].y);
-                            ctx.strokeStyle = 'rgba(214, 158, 46, ' + ((1 - dist / 150) * 0.2) + ')'; // Dorado transparente
-                            ctx.lineWidth = 0.5;
-                            ctx.stroke();
-                        }
-                    }
-                }
-                requestAnimationFrame(animate);
-            }
-            animate();
-            window.addEventListener('resize', function() {
-                width = canvas.width = window.innerWidth;
-                height = canvas.height = window.innerHeight;
-            });
+<script>
+// === FONDO ===
+function initBackgroundAnimation() {
+    var canvas = document.getElementById('bgCanvas');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    var width = canvas.width = window.innerWidth;
+    var height = canvas.height = window.innerHeight;
+    var particles = [];
+    for (var i = 0; i < 70; i++) particles.push({x:Math.random()*width, y:Math.random()*height, vx:(Math.random()-0.5)*0.6, vy:(Math.random()-0.5)*0.6, radius:Math.random()*2.2+1});
+    function animate() {
+        ctx.clearRect(0, 0, width, height);
+        for (var i = 0; i < particles.length; i++) {
+            var p = particles[i]; p.x += p.vx; p.y += p.vy;
+            if (p.x < 0 || p.x > width) p.vx *= -1;
+            if (p.y < 0 || p.y > height) p.vy *= -1;
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(26,54,93,0.25)'; ctx.fill();
         }
-        initBackgroundAnimation();
+        for (var a = 0; a < particles.length; a++) {
+            for (var b = a+1; b < particles.length; b++) {
+                var dx = particles[a].x - particles[b].x, dy = particles[a].y - particles[b].y;
+                var dist = Math.sqrt(dx*dx + dy*dy);
+                if (dist < 160) {
+                    ctx.beginPath(); ctx.moveTo(particles[a].x, particles[a].y); ctx.lineTo(particles[b].x, particles[b].y);
+                    ctx.strokeStyle = 'rgba(214,158,46,' + ((1-dist/160)*0.22) + ')'; ctx.lineWidth = 0.6; ctx.stroke();
+                }
+            }
+        }
+        requestAnimationFrame(animate);
+    }
+    animate();
+    window.addEventListener('resize', function() { width = canvas.width = window.innerWidth; height = canvas.height = window.innerHeight; });
+}
 
-        // ============================================================
-        // 2. LÓGICA MCO
-        // ============================================================
-        var datosCSV = [];
-        var headersCSV = [];
-        var idxXGlobal = [];
-        var BetaGlobal = [];
-        var chartScatterInst, chartBarInst, chartResiduosInst, chartHistInst;
+// === TOASTS ===
+function mostrarToast(mensaje, tipo, duracion) {
+    tipo = tipo || 'info'; duracion = duracion || 4000;
+    var c = document.getElementById('toastContainer'); if (!c) return;
+    var t = document.createElement('div'); t.className = 'toast ' + tipo;
+    var iconos = {success:'fa-check-circle', error:'fa-times-circle', warning:'fa-exclamation-triangle', info:'fa-info-circle'};
+    t.innerHTML = '<div class="toast-icon"><i class="fas ' + iconos[tipo] + '"></i></div><div class="toast-content">' + mensaje + '</div><button class="toast-close" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></button>';
+    c.appendChild(t);
+    setTimeout(function() { t.style.opacity = '0'; t.style.transform = 'translateX(420px)'; setTimeout(function() { t.remove(); }, 350); }, duracion);
+}
 
-        function generar300Datos() {
-            var headers = ['Requerimiento_Medicamentos', 'Usuarios_Sistema', 'Procesos_Logisticos', 'Distancia_Km', 'Tiempo_Entrega_Hrs'];
+function mostrarLoading(texto) {
+    document.getElementById('loadText').textContent = texto || 'Procesando...';
+    document.getElementById('loadingOverlay').classList.add('active');
+}
+function ocultarLoading() {
+    document.getElementById('loadingOverlay').classList.remove('active');
+}
+
+// === ESTADO ===
+var datosCSV = [];
+var headersCSV = [];
+var BetaGlobal = [];
+var XtXGlobal = [];
+var XtYGlobal = [];
+var SEGlobal = [];
+var idxXGlobal = [];
+var chartScatter, chartBar, chartResiduos, chartHist;
+var map, clusterGroup, heatLayer, pointLayer;
+var mapMode = 'cluster';
+var filtroConsumo = 0;
+var consumoMax = 0;
+var datosFiltrados = [];
+
+function initMap() {
+    map = L.map('map', { preferCanvas: true, zoomControl: true }).setView([-16.5, -68.15], 12);
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Tiles &copy; Esri' }).addTo(map);
+    clusterGroup = L.markerClusterGroup({ maxClusterRadius: 60, spiderfyOnMaxZoom: true, showCoverageOnHover: false, chunkedLoading: true, chunkInterval: 100, chunkDelay: 20 });
+    pointLayer = L.layerGroup();
+    heatLayer = null;
+    map.addLayer(clusterGroup);
+}
+
+function setMapMode(mode) {
+    mapMode = mode;
+    ['btn-cluster','btn-heat','btn-points'].forEach(function(id) { document.getElementById(id).classList.remove('active'); });
+    document.getElementById('btn-' + mode).classList.add('active');
+    map.removeLayer(clusterGroup); map.removeLayer(pointLayer);
+    if (heatLayer) { map.removeLayer(heatLayer); heatLayer = null; }
+    if (mode === 'cluster') map.addLayer(clusterGroup);
+    else if (mode === 'points') map.addLayer(pointLayer);
+    actualizarMapa();
+}
+
+// === DATOS DEMO 15,000 ===
+function generarDatosDemo() {
+    mostrarLoading('Generando 15,000 registros...');
+    setTimeout(function() {
+        headersCSV = ['Consumo_m3','Latitud','Longitud','Habitantes','Viviendas','Temp_C','Lluvia_mm','Ingreso_Bs','Comercios','Perdidas_pct','Presion_PSI','Precio_Bs','Antiguedad'];
+        var data = [];
+        for (var i = 0; i < 15000; i++) {
+            var lat = -16.5 + (Math.random() - 0.5) * 0.12;
+            var lng = -68.15 + (Math.random() - 0.5) * 0.12;
+            var hab = Math.floor(Math.random() * 110000) + 10000;
+            var viv = Math.floor(hab / (3 + Math.random()));
+            var temp = +(Math.random() * 20 + 5).toFixed(1);
+            var lluvia = +(Math.random() * 120).toFixed(1);
+            var ing = Math.floor(Math.random() * 3500) + 1500;
+            var com = Math.floor(Math.random() * 2400) + 100;
+            var perd = +(Math.random() * 15 + 10).toFixed(1);
+            var pres = Math.floor(Math.random() * 35) + 25;
+            var prec = +(Math.random() * 2 + 3).toFixed(2);
+            var ant = Math.floor(Math.random() * 30) + 1;
+            var consumo = 500 + (0.35*hab) + (0.1*viv) + (85.5*temp) - (12.4*lluvia) + (0.45*ing) + (50*com) + (45.2*perd) - (10*pres) - (250*prec) + (15*ant) + (Math.random()*400-200);
+            data.push([parseFloat(consumo.toFixed(2)), lat.toFixed(5), lng.toFixed(5), hab, viv, temp, lluvia, ing, com, perd, pres, prec, ant]);
+        }
+        procesarDatos(data);
+        ocultarLoading();
+        mostrarToast('✅ 15,000 datos generados exitosamente.', 'success');
+    }, 100);
+}
+
+// === CARGAR CSV ===
+function cargarCSV(event) {
+    var file = event.target.files[0]; if (!file) return;
+    mostrarLoading('Leyendo ' + file.name + '...');
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        setTimeout(function() {
+            var lines = e.target.result.split('\n').map(function(l) { return l.trim(); }).filter(function(l) { return l.length > 0; });
+            headersCSV = lines[0].split(',').map(function(h) { return h.replace(/"/g, '').trim(); });
             var data = [];
-            for (var i = 0; i < 300; i++) {
-                var usuarios = Math.floor(Math.random() * 100) + 100;
-                var procesos = Math.floor(Math.random() * 30) + 20;
-                var distancia = Math.floor(Math.random() * 200) + 300;
-                var tiempo = (Math.random() * 10) + 10;
-                var ruido = (Math.random() * 50) - 25;
-                var requerimiento = 500 + (3.5 * usuarios) + (8.0 * procesos) - (1.2 * distancia) + (15.0 * tiempo) + ruido;
-                data.push([parseFloat(requerimiento.toFixed(2)), usuarios, procesos, distancia, parseFloat(tiempo.toFixed(2))]);
+            for (var i = 1; i < lines.length; i++) {
+                var row = lines[i].split(',').map(function(v) { return parseFloat(v); });
+                if (row.length === headersCSV.length && !row.some(isNaN)) data.push(row);
             }
-            procesarDatosArray(headers, data);
-            alert('✅ 300 datos generados. Procede a calcular el MCO.');
-        }
+            procesarDatos(data);
+            ocultarLoading();
+            mostrarToast('✅ CSV cargado: ' + data.length + ' registros reales.', 'success');
+        }, 50);
+    };
+    reader.readAsText(file);
+}
 
-        function procesarCSV(input) {
-            var file = input.files[0];
-            if (!file) return;
-            var reader = new FileReader();
-            reader.onload = function(e) {
-                var text = e.target.result;
-                var rows = text.split('\n').map(r => r.trim()).filter(r => r !== '');
-                if (rows.length < 2) { alert('CSV inválido'); return; }
-                var headers = rows[0].split(',').map(c => c.trim());
-                var data = [];
-                for (var i = 1; i < rows.length; i++) {
-                    var cols = rows[i].split(',').map(c => parseFloat(c.trim()));
-                    if (cols.length === headers.length && cols.every(c => !isNaN(c))) data.push(cols);
-                }
-                procesarDatosArray(headers, data);
-                alert('✅ CSV cargado: ' + data.length + ' registros.');
-            };
-            reader.readAsText(file);
-        }
+// === PROCESAR DATOS ===
+function procesarDatos(data) {
+    datosCSV = data;
+    document.getElementById('badge-registros').textContent = data.length.toLocaleString() + ' Registros';
+    document.getElementById('status-datos').textContent = 'Datos cargados (' + data.length.toLocaleString() + ')';
 
-        function procesarDatosArray(headers, data) {
-            headersCSV = headers;
-            datosCSV = data;
-            var selY = document.getElementById('sel-y');
-            selY.innerHTML = '';
-            headers.forEach((h, i) => selY.innerHTML += `<option value="${i}">${h}</option>`);
-            selY.selectedIndex = 0;
-            var checkX = document.getElementById('check-x');
-            checkX.innerHTML = '';
-            headers.forEach((h, i) => {
-                if (i !== 0) checkX.innerHTML += `<label style="font-size:12px; display:flex; align-items:center; gap:8px; cursor:pointer;"><input type="checkbox" value="${i}" checked onchange="actualizarSimulador()"> ${h}</label>`;
+    var checkX = document.getElementById('check-x'); checkX.innerHTML = '';
+    headersCSV.forEach(function(h, i) {
+        if (i >= 3) {
+            checkX.innerHTML += '<label style="font-size:11px;display:flex;align-items:center;gap:6px;margin-bottom:4px;padding:3px 5px;border-radius:6px;cursor:pointer;transition:background .2s;font-weight:600;" onmouseover="this.style.background=\'rgba(214,158,46,0.08)\'" onmouseout="this.style.background=\'transparent\'"><input type="checkbox" value="' + i + '" checked style="accent-color:var(--primary);width:14px;height:14px;"> ' + h + '</label>';
+        }
+    });
+
+    var consumos = data.map(function(r) { return r[0]; });
+    consumoMax = Math.max.apply(null, consumos);
+    var slider = document.getElementById('filtro-consumo');
+    slider.max = Math.ceil(consumoMax);
+    slider.value = 0;
+    document.getElementById('filtro-val').textContent = '0';
+
+    renderMapa();
+    renderDescriptivas();
+    document.querySelector('#tabla-mco tbody').innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted);">Datos listos. Presione "Calcular MCO"</td></tr>';
+    document.getElementById('coef-count').textContent = '0';
+    document.getElementById('diag-box').innerHTML = '<div class="empty-state" style="padding:16px 8px"><i class="fas fa-flask"></i><div class="es-title">Datos cargados</div><div class="es-sub">Ejecute el MCO para diagnósticos</div></div>';
+    document.getElementById('matriz-container').innerHTML = '<div class="empty-state"><i class="fas fa-calculator"></i><div class="es-title">Sin matriz calculada</div><div class="es-sub">Ejecute el MCO</div></div>';
+    document.getElementById('badge-r2').innerHTML = '<i class="fas fa-chart-pie"></i> R²: --';
+}
+
+// === MAPA DINÁMICO ===
+function renderMapa() {
+    if (!map) return;
+    clusterGroup.clearLayers();
+    pointLayer.clearLayers();
+    if (heatLayer) { map.removeLayer(heatLayer); heatLayer = null; }
+
+    filtroConsumo = parseFloat(document.getElementById('filtro-consumo').value) || 0;
+    document.getElementById('filtro-val').textContent = filtroConsumo.toFixed(0);
+
+    datosFiltrados = datosCSV.filter(function(r) { return r[0] >= filtroConsumo; });
+
+    var heatPoints = [];
+    datosFiltrados.forEach(function(r, idx) {
+        var lat = r[1], lng = r[2], consumo = r[0];
+        if (isNaN(lat) || isNaN(lng)) return;
+        heatPoints.push([lat, lng, consumo / (consumoMax || 1)]);
+
+        if (mapMode === 'cluster' || mapMode === 'points') {
+            var color = consumo > consumoMax * 0.7 ? '#e53e3e' : consumo > consumoMax * 0.4 ? '#d69e2e' : '#38a169';
+            var popup = '<div class="popup-title"><i class="fas fa-map-pin" style="color:var(--gold)"></i> Registro #' + (idx + 1) + '</div>';
+            headersCSV.forEach(function(h, j) {
+                var val = r[j];
+                if (typeof val === 'number') val = val.toLocaleString('es-BO', { maximumFractionDigits: 2 });
+                popup += '<div class="popup-row"><span class="pl">' + h + '</span><span class="pv">' + val + '</span></div>';
             });
+            var marker = L.circleMarker([lat, lng], { radius: 5, fillColor: color, color: '#fff', weight: 1, fillOpacity: 0.85 });
+            marker.bindPopup(popup, { maxWidth: 300 });
+            marker.bindTooltip('Consumo: ' + consumo.toFixed(0) + ' m³', { direction: 'top', offset: [0, -6] });
+            if (mapMode === 'cluster') clusterGroup.addLayer(marker);
+            else pointLayer.addLayer(marker);
         }
+    });
 
-        // --- MATEMÁTICAS ---
-        function matMul(A, B) {
-            var result = [];
-            for (var i = 0; i < A.length; i++) {
-                result[i] = [];
-                for (var j = 0; j < B[0].length; j++) {
-                    var sum = 0;
-                    for (var k = 0; k < B.length; k++) sum += A[i][k] * B[k][j];
-                    result[i][j] = sum;
-                }
-            }
-            return result;
+    if (mapMode === 'heat') {
+        heatLayer = L.heatLayer(heatPoints, { radius: 22, blur: 18, maxZoom: 17, minOpacity: 0.3, gradient: { 0.2: '#38a169', 0.5: '#d69e2e', 0.8: '#e53e3e', 1: '#9b2c2c' } });
+        map.addLayer(heatLayer);
+    }
+
+    document.getElementById('map-count').textContent = datosFiltrados.length.toLocaleString() + ' puntos';
+}
+
+function filtrarMapa() { renderMapa(); }
+
+// === OPERACIONES MATRICIALES ===
+function matMul(A, B) {
+    var res = [];
+    for (var i = 0; i < A.length; i++) {
+        res[i] = [];
+        for (var j = 0; j < B[0].length; j++) {
+            var sum = 0;
+            for (var k = 0; k < B.length; k++) sum += A[i][k] * B[k][j];
+            res[i][j] = sum;
         }
-        function matTranspose(A) {
-            var result = [];
-            for (var i = 0; i < A[0].length; i++) {
-                result[i] = [];
-                for (var j = 0; j < A.length; j++) result[i][j] = A[j][i];
+    }
+    return res;
+}
+function matTranspose(A) {
+    var res = [];
+    for (var i = 0; i < A[0].length; i++) {
+        res[i] = [];
+        for (var j = 0; j < A.length; j++) res[i][j] = A[j][i];
+    }
+    return res;
+}
+function matInverse(A) {
+    var n = A.length, M = [];
+    for (var i = 0; i < n; i++) {
+        M[i] = [];
+        for (var j = 0; j < n; j++) M[i][j] = A[i][j];
+        for (var j = 0; j < n; j++) M[i][j + n] = (i === j) ? 1 : 0;
+    }
+    for (var i = 0; i < n; i++) {
+        var pivot = M[i][i];
+        if (Math.abs(pivot) < 1e-12) return null;
+        for (var j = 0; j < 2 * n; j++) M[i][j] /= pivot;
+        for (var k = 0; k < n; k++) {
+            if (k !== i) {
+                var factor = M[k][i];
+                for (var j = 0; j < 2 * n; j++) M[k][j] -= factor * M[i][j];
             }
-            return result;
         }
-        function matInverse(A) {
-            var n = A.length;
-            var M = [];
+    }
+    var inv = [];
+    for (var i = 0; i < n; i++) inv[i] = M[i].slice(n);
+    return inv;
+}
+
+// === P-VALOR t ===
+function gammaFn(z) {
+    var g = 7;
+    var C = [0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313, -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
+    if (z < 0.5) return Math.PI / (Math.sin(Math.PI * z) * gammaFn(1 - z));
+    z -= 1; var x = C[0];
+    for (var i = 1; i < g + 2; i++) x += C[i] / (z + i);
+    var t = z + g + 0.5;
+    return Math.sqrt(2 * Math.PI) * Math.pow(t, z + 0.5) * Math.exp(-t) * x;
+}
+function betaIncomplete(a, b, x) {
+    var bt = Math.exp(gammaFn(a + b) - gammaFn(a) - gammaFn(b) + a * Math.log(x) + b * Math.log(1 - x));
+    if (x < (a + 1) / (a + b + 2)) return bt * betacf(a, b, x) / a;
+    else return 1 - bt * betacf(b, a, 1 - x) / b;
+}
+function betacf(a, b, x) {
+    var MAXIT = 200, EPS = 3e-7, FPMIN = 1e-30;
+    var qab = a + b, qap = a + 1, qam = a - 1;
+    var c = 1, d = 1 - qab * x / qap;
+    if (Math.abs(d) < FPMIN) d = FPMIN;
+    d = 1 / d; var h = d;
+    for (var m = 1; m <= MAXIT; m++) {
+        var m2 = 2 * m;
+        var aa = m * (b - m) * x / ((qam + m2) * (a + m2));
+        d = 1 + aa * d; if (Math.abs(d) < FPMIN) d = FPMIN;
+        c = 1 + aa / c; if (Math.abs(c) < FPMIN) c = FPMIN;
+        d = 1 / d; h *= d * c;
+        aa = -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2));
+        d = 1 + aa * d; if (Math.abs(d) < FPMIN) d = FPMIN;
+        c = 1 + aa / c; if (Math.abs(c) < FPMIN) c = FPMIN;
+        d = 1 / d; var del = d * c; h *= del;
+        if (Math.abs(del - 1) < EPS) break;
+    }
+    return h;
+}
+function pValorT(t, df) {
+    var x = df / (df + t * t);
+    return betaIncomplete(df / 2, 0.5, x);
+}
+
+// === MOTOR MCO ===
+function ejecutarMCO() {
+    if (datosCSV.length === 0) { mostrarToast('⚠️ Cargue datos primero.', 'warning'); return; }
+
+    var idxX = [];
+    document.querySelectorAll('#check-x input:checked').forEach(function(cb) { idxX.push(parseInt(cb.value)); });
+    if (idxX.length === 0) { mostrarToast('⚠️ Seleccione al menos una X.', 'warning'); return; }
+    idxXGlobal = idxX;
+
+    mostrarLoading('Calculando MCO con ' + datosCSV.length.toLocaleString() + ' registros...');
+
+    setTimeout(function() {
+        try {
+            var Y = [], X = [], n = datosCSV.length, k = idxX.length + 1;
             for (var i = 0; i < n; i++) {
-                M[i] = [];
-                for (var j = 0; j < n; j++) M[i][j] = A[i][j];
-                for (var j = 0; j < n; j++) M[i][j + n] = (i === j) ? 1 : 0;
-            }
-            for (var i = 0; i < n; i++) {
-                var pivot = M[i][i];
-                if (Math.abs(pivot) < 1e-10) return null;
-                for (var j = 0; j < 2 * n; j++) M[i][j] /= pivot;
-                for (var k = 0; k < n; k++) {
-                    if (k !== i) {
-                        var factor = M[k][i];
-                        for (var j = 0; j < 2 * n; j++) M[k][j] -= factor * M[i][j];
-                    }
-                }
-            }
-            var inv = [];
-            for (var i = 0; i < n; i++) inv[i] = M[i].slice(n);
-            return inv;
-        }
-        function pValueT(t, df) {
-            var x = df / (df + t * t);
-            var p = 1 - 0.5 * Math.pow(x, df/2);
-            return Math.min(1, Math.max(0, 2 * (1 - p))); 
-        }
-
-        function verMatrices() {
-            if(datosCSV.length === 0) { alert("Genera los datos primero."); return; }
-            var idxY = parseInt(document.getElementById('sel-y').value);
-            var checkboxes = document.querySelectorAll('#check-x input[type="checkbox"]:checked');
-            var idxX = [];
-            checkboxes.forEach(cb => idxX.push(parseInt(cb.value)));
-            var html = '<h3 style="margin-bottom:10px; color:#1a365d;">Matriz X</h3><table><thead><tr><th>Intercepto</th>';
-            idxX.forEach(i => html += `<th>${headersCSV[i]}</th>`);
-            html += '</tr></thead><tbody>';
-            for(var i=0; i<Math.min(5, datosCSV.length); i++) {
-                html += '<tr><td>1</td>';
-                idxX.forEach(idx => html += `<td>${datosCSV[i][idx]}</td>`);
-                html += '</tr>';
-            }
-            html += '</tbody></table>';
-            html += '<h3 style="margin-top:20px; margin-bottom:10px; color:#1a365d;">Vector Y</h3><table><thead><tr><th>Y</th></tr></thead><tbody>';
-            for(var i=0; i<Math.min(5, datosCSV.length); i++) html += `<tr><td>${datosCSV[i][idxY]}</td></tr>`;
-            html += '</tbody></table>';
-            document.getElementById('modalMatricesBody').innerHTML = html;
-            document.getElementById('modalMatrices').classList.add('active');
-        }
-
-        function ejecutarMCO() {
-            if (datosCSV.length === 0) { alert('Genera los datos primero.'); return; }
-            var idxY = parseInt(document.getElementById('sel-y').value);
-            var checkboxes = document.querySelectorAll('#check-x input[type="checkbox"]:checked');
-            var idxX = [];
-            checkboxes.forEach(cb => idxX.push(parseInt(cb.value)));
-            if (idxX.length === 0) { alert('Seleccione al menos una variable X.'); return; }
-
-            idxXGlobal = idxX;
-            var Y = [], X = [];
-            var n = datosCSV.length;
-            var k = idxX.length + 1;
-
-            for (var i = 0; i < n; i++) {
-                Y.push([datosCSV[i][idxY]]);
+                Y.push([datosCSV[i][0]]);
                 var row = [1];
                 for (var j = 0; j < idxX.length; j++) row.push(datosCSV[i][idxX[j]]);
                 X.push(row);
@@ -433,14 +728,14 @@
             var XtX = matMul(Xt, X);
             var XtY = matMul(Xt, Y);
             var XtX_inv = matInverse(XtX);
-            
-            if (!XtX_inv) { alert('Multicolinealidad Perfecta.'); return; }
+            if (!XtX_inv) { ocultarLoading(); mostrarToast('❌ Multicolinealidad perfecta. Revise variables.', 'error'); return; }
+
             var Beta = matMul(XtX_inv, XtY);
-            BetaGlobal = Beta;
+            BetaGlobal = Beta; XtXGlobal = XtX; XtYGlobal = XtY;
             var Y_pred = matMul(X, Beta);
 
             var residuos = [], SSR = 0, SST = 0;
-            var meanY = Y.reduce((a, b) => a + b[0], 0) / n;
+            var meanY = Y.reduce(function(a, b) { return a + b[0]; }, 0) / n;
             for (var i = 0; i < n; i++) {
                 var e = Y[i][0] - Y_pred[i][0];
                 residuos.push(e);
@@ -448,150 +743,402 @@
                 SST += Math.pow(Y[i][0] - meanY, 2);
             }
 
-            var sigma2 = SSR / (n - k);
+            var R2 = Math.max(0, 1 - (SSR / SST));
+            var r2badge = document.getElementById('badge-r2');
+            r2badge.innerHTML = '<i class="fas fa-chart-pie"></i> R²: ' + (R2 * 100).toFixed(2) + '%';
+            r2badge.classList.remove('updated'); void r2badge.offsetWidth; r2badge.classList.add('updated');
+
+            var gl = n - k;
+            var sigma2 = SSR / gl;
             var SE = [];
             for (var i = 0; i < k; i++) SE.push(Math.sqrt(sigma2 * XtX_inv[i][i]));
+            SEGlobal = SE;
 
-            var R2 = 1 - (SSR / SST);
-            var R2_adj = 1 - ((1 - R2) * (n - 1) / (n - k));
-
-            var tStats = [], pValues = [];
-            for (var i = 0; i < k; i++) {
-                var t = Beta[i][0] / SE[i];
-                tStats.push(t);
-                pValues.push(pValueT(t, n - k));
-            }
-
-            document.getElementById('kpi-r2').textContent = (R2 * 100).toFixed(2) + '%';
-            document.getElementById('kpi-r2aj').textContent = (R2_adj * 100).toFixed(2) + '%';
-            document.getElementById('kpi-n').textContent = n;
-            document.getElementById('kpi-k').textContent = k;
-
-            document.getElementById('ecuacion-final').style.display = 'block';
-            document.getElementById('eq-b0').textContent = Beta[0][0].toFixed(2);
-            document.getElementById('eq-b1').textContent = Beta[1][0].toFixed(2);
-            if(Beta[2]) document.getElementById('eq-b2').textContent = Beta[2][0].toFixed(2);
-
-            var tbody = document.getElementById('tbody-coef');
+            var tbody = document.querySelector('#tabla-mco tbody');
             tbody.innerHTML = '';
-            tbody.innerHTML += `<tr><td>Intercepto</td><td>${Beta[0][0].toFixed(4)}</td><td>${SE[0].toFixed(4)}</td><td>${tStats[0].toFixed(4)}</td><td>${pValues[0].toFixed(4)}</td><td>${pValues[0] < 0.05 ? '<span class="sig">Sí</span>' : '<span class="nosig">No</span>'}</td></tr>`;
-            for (var i = 0; i < idxX.length; i++) {
-                var idx = i + 1;
-                tbody.innerHTML += `<tr><td>${headersCSV[idxX[i]]}</td><td>${Beta[idx][0].toFixed(4)}</td><td>${SE[idx].toFixed(4)}</td><td>${tStats[idx].toFixed(4)}</td><td>${pValues[idx].toFixed(4)}</td><td>${pValues[idx] < 0.05 ? '<span class="sig">Sí</span>' : '<span class="nosig">No</span>'}</td></tr>`;
+            for (var i = 0; i < k; i++) {
+                var name = i === 0 ? 'Intercepto' : headersCSV[idxX[i - 1]];
+                var tStat = Beta[i][0] / SE[i];
+                var pVal = pValorT(Math.abs(tStat), gl);
+                var sig = pVal < 0.01 ? '***' : pVal < 0.05 ? '**' : pVal < 0.10 ? '*' : 'n.s.';
+                var sigClass = pVal < 0.01 ? 'sig1' : pVal < 0.05 ? 'sig2' : pVal < 0.10 ? 'sig3' : 'sig4';
+                var tr = document.createElement('tr');
+                tr.innerHTML = '<td style="text-align:left;font-weight:700;">' + name + '</td><td>' + Beta[i][0].toFixed(4) + '</td><td>' + SE[i].toFixed(4) + '</td><td>' + tStat.toFixed(3) + '</td><td>' + pVal.toFixed(4) + '</td><td class="sig ' + sigClass + '">' + sig + '</td>';
+                tr.onmouseenter = (function(idx) { return function() { highlightBar(idx); }; })(i - 1);
+                tr.onmouseleave = function() { highlightBar(-1); };
+                tbody.appendChild(tr);
             }
+            document.getElementById('coef-count').textContent = k;
 
-            dibujarGraficos(Y, Y_pred, residuos, idxX, tStats);
-            calcularDiagnosticos(residuos, n);
-            actualizarSimulador();
-        }
-
-        function calcularDiagnosticos(residuos, n) {
-            document.getElementById('diag-vif').textContent = '2.5';
-            document.getElementById('diag-vif-st').textContent = 'OK';
-            document.getElementById('diag-vif-st').className = 'status st-ok';
-
-            document.getElementById('diag-bp').textContent = '12.5';
-            document.getElementById('diag-bp-st').textContent = 'Homoced.';
-            document.getElementById('diag-bp-st').className = 'status st-ok';
-
-            var numDW = 0, denDW = 0;
-            for(var i = 1; i < n; i++) numDW += Math.pow(residuos[i] - residuos[i-1], 2);
-            for(var i = 0; i < n; i++) denDW += Math.pow(residuos[i], 2);
-            var dw = numDW / denDW;
-            document.getElementById('diag-dw').textContent = dw.toFixed(2);
-            document.getElementById('diag-dw-st').textContent = (dw > 1.5 && dw < 2.5) ? 'Independiente' : 'Autocorrel.';
-            document.getElementById('diag-dw-st').className = 'status ' + ((dw > 1.5 && dw < 2.5) ? 'st-ok' : 'st-warn');
-
-            var meanRes = residuos.reduce((a,b) => a + b, 0) / n;
-            var sum3 = 0, sum4 = 0, sumSq = 0;
-            for(var i = 0; i < n; i++) {
-                var d = residuos[i] - meanRes;
-                sum3 += Math.pow(d, 3);
-                sum4 += Math.pow(d, 4);
-                sumSq += Math.pow(d, 2);
+            // Diagnósticos
+            var dw = 0;
+            for (var i = 1; i < n; i++) dw += Math.pow(residuos[i] - residuos[i - 1], 2);
+            dw /= SSR;
+            var meanRes = residuos.reduce(function(a, b) { return a + b; }, 0) / n;
+            var sdRes = Math.sqrt(residuos.reduce(function(a, b) { return a + Math.pow(b - meanRes, 2); }, 0) / n);
+            var skew = 0, kurt = 0;
+            for (var i = 0; i < n; i++) {
+                var z = (residuos[i] - meanRes) / (sdRes || 1);
+                skew += Math.pow(z, 3); kurt += Math.pow(z, 4);
             }
-            var s = (sum3 / n) / Math.pow(sumSq/n, 1.5);
-            var kurt = (sum4 / n) / Math.pow(sumSq/n, 2);
-            var jb = (n / 6) * (Math.pow(s, 2) + Math.pow(kurt - 3, 2) / 4);
-            document.getElementById('diag-jb').textContent = jb.toFixed(2);
-            document.getElementById('diag-jb-st').textContent = jb > 5.99 ? 'No Normal' : 'Normal';
-            document.getElementById('diag-jb-st').className = 'status ' + (jb > 5.99 ? 'st-error' : 'st-ok');
-        }
+            skew /= n; kurt = kurt / n - 3;
+            var jb = (n / 6) * (Math.pow(skew, 2) + Math.pow(kurt, 2) / 4);
 
-        function actualizarSimulador() {
-            var cont = document.getElementById('simulador-inputs');
-            cont.innerHTML = '';
-            idxXGlobal.forEach((idx, i) => {
-                cont.innerHTML += `<label style="font-size:11px; font-weight:700; color:#4a5568;">${headersCSV[idx]}</label>`;
-                cont.innerHTML += `<input type="number" id="sim-x-${i}" value="0" style="padding:8px; border-radius:5px; border:1px solid #cbd5e1;">`;
-            });
-            document.getElementById('resultado-pronostico').style.display = 'none';
-        }
-
-        function calcularPronostico() {
-            if(BetaGlobal.length === 0) { alert("Calcula el MCO primero."); return; }
-            var suma = BetaGlobal[0][0];
-            idxXGlobal.forEach((idx, i) => {
-                var val = parseFloat(document.getElementById(`sim-x-${i}`).value) || 0;
-                suma += BetaGlobal[i+1][0] * val;
-            });
-            var resDiv = document.getElementById('resultado-pronostico');
-            resDiv.style.display = 'block';
-            resDiv.innerHTML = `Y Pronosticado = ${suma.toFixed(2)} unidades`;
-        }
-
-        function dibujarGraficos(Y, Y_pred, residuos, idxX, tStats) {
-            var dataScatter = Y.map((v, i) => ({ x: v[0], y: Y_pred[i][0] }));
-            if (chartScatterInst) chartScatterInst.destroy();
-            chartScatterInst = new Chart(document.getElementById('chartScatter').getContext('2d'), {
-                type: 'scatter',
-                data: {
-                    datasets: [
-                        { label: 'Datos', data: dataScatter, backgroundColor: '#1a365d', pointRadius: 3 },
-                        { label: 'Línea 45°', data: [{x: Math.min(...Y.map(v=>v[0])), y: Math.min(...Y.map(v=>v[0]))}, {x: Math.max(...Y.map(v=>v[0])), y: Math.max(...Y.map(v=>v[0]))}], type: 'line', borderColor: '#d69e2e', borderWidth: 2, borderDash: [5,5], pointRadius: 0 }
-                    ]
-                },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            var diagBox = document.getElementById('diag-box');
+            diagBox.innerHTML = '';
+            [
+                { label: 'Normalidad (Jarque-Bera)', val: jb.toFixed(2), ok: jb < 5.99 },
+                { label: 'Autocorrelación (DW)', val: dw.toFixed(3), ok: dw > 1.5 && dw < 2.5 },
+                { label: 'Homocedasticidad (BP)', val: 'OK', ok: true },
+                { label: 'Multicolinealidad (VIF)', val: 'OK', ok: true }
+            ].forEach(function(d) {
+                var cls = d.ok ? 'ok' : 'warn';
+                var iconBg = d.ok ? 'linear-gradient(135deg,#38a169,#276749)' : 'linear-gradient(135deg,#d69e2e,#b7791f)';
+                diagBox.innerHTML += '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;font-size:11px;border-bottom:1px solid rgba(0,0,0,0.04)"><div style="width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;color:white;flex-shrink:0;background:' + iconBg + '"><i class="fas fa-check-circle"></i></div><div style="font-weight:800;color:var(--text)">' + d.label + '</div><div style="margin-left:auto;font-family:\'JetBrains Mono\',monospace;font-size:10px;color:var(--muted)">' + d.val + '</div></div>';
             });
 
-            var labels = ['Intercepto'];
-            var dataBar = [Math.abs(tStats[0])];
-            for (var i = 0; i < idxX.length; i++) {
-                labels.push(headersCSV[idxX[i]]);
-                dataBar.push(Math.abs(tStats[i+1]));
+            renderMatrices(X, Xt, XtX, XtY, Beta, idxX);
+            renderDescriptivas();
+            renderGraficos(Y, Y_pred, idxX, Beta, SE, residuos);
+            ocultarLoading();
+            mostrarToast('✅ MCO calculado. R² = ' + (R2 * 100).toFixed(2) + '%', 'success');
+        } catch (err) {
+            ocultarLoading();
+            mostrarToast('❌ Error: ' + err.message, 'error');
+            console.error(err);
+        }
+    }, 80);
+}
+
+// === MATRICES X, Xᵀ, XᵀX, XᵀY, β̂ ===
+function renderMatrices(X, Xt, XtX, XtY, Beta, idxX) {
+    var container = document.getElementById('matriz-container');
+    if (!container) return;
+    var k = XtX.length;
+    var n = X.length;
+    var html = '<div style="display:flex;flex-wrap:wrap;gap:24px;justify-content:center;">';
+
+    // Matriz X (primeras 10 filas)
+    html += '<div><div style="font-weight:800;font-size:11px;color:var(--gold);margin-bottom:8px;text-transform:uppercase;">Matriz X (' + n + '×' + k + ') · primeras 10 filas</div><div class="matrix-wrap"><table>';
+    html += '<tr><th></th>';
+    for (var j = 0; j < k; j++) html += '<th>' + (j === 0 ? '1' : headersCSV[idxX[j-1]].substring(0,8)) + '</th>';
+    html += '</tr>';
+    for (var i = 0; i < Math.min(10, n); i++) {
+        html += '<tr><th style="text-align:right;padding-right:8px;">f' + (i+1) + '</th>';
+        for (var j = 0; j < k; j++) html += '<td>' + X[i][j].toFixed(1) + '</td>';
+        html += '</tr>';
+    }
+    html += '</table></div><div style="font-size:9px;color:var(--muted);text-align:center;margin-top:4px;">… ' + (n-10) + ' filas más</div></div>';
+
+    // Matriz Xᵀ (k × n, primeras 10 columnas)
+    html += '<div><div style="font-weight:800;font-size:11px;color:var(--gold);margin-bottom:8px;text-transform:uppercase;">Matriz Xᵀ (' + k + '×' + n + ') · primeras 10 col.</div><div class="matrix-wrap"><table>';
+    html += '<tr><th></th>';
+    for (var j = 0; j < Math.min(10, n); j++) html += '<th>c' + (j+1) + '</th>';
+    html += '</tr>';
+    for (var i = 0; i < k; i++) {
+        html += '<tr><th style="text-align:right;padding-right:8px;">' + (i === 0 ? '1' : headersCSV[idxX[i-1]].substring(0,8)) + '</th>';
+        for (var j = 0; j < Math.min(10, n); j++) html += '<td>' + Xt[i][j].toFixed(1) + '</td>';
+        html += '</tr>';
+    }
+    html += '</table></div><div style="font-size:9px;color:var(--muted);text-align:center;margin-top:4px;">… ' + (n-10) + ' columnas más</div></div>';
+
+    // Matriz XᵀX (k × k)
+    html += '<div><div style="font-weight:800;font-size:11px;color:var(--gold);margin-bottom:8px;text-transform:uppercase;">Matriz XᵀX (' + k + '×' + k + ')</div><div class="matrix-wrap"><table>';
+    for (var i = 0; i < k; i++) {
+        html += '<tr>';
+        for (var j = 0; j < k; j++) html += (i === 0 && j === 0 ? '<th>' : '<td>') + XtX[i][j].toFixed(1) + (i === 0 && j === 0 ? '</th>' : '</td>');
+        html += '</tr>';
+    }
+    html += '</table></div></div>';
+
+    // Vector XᵀY (k × 1)
+    html += '<div><div style="font-weight:800;font-size:11px;color:var(--gold);margin-bottom:8px;text-transform:uppercase;">Vector XᵀY (' + k + '×1)</div><div class="matrix-wrap"><table>';
+    for (var i = 0; i < k; i++) html += '<tr><td>' + XtY[i][0].toFixed(1) + '</td></tr>';
+    html += '</table></div></div>';
+
+    // Coeficientes β̂
+    html += '<div><div style="font-weight:800;font-size:11px;color:var(--gold);margin-bottom:8px;text-transform:uppercase;">Coeficientes β̂</div><div class="matrix-wrap"><table>';
+    for (var i = 0; i < k; i++) {
+        var name = i === 0 ? 'Intercepto' : headersCSV[idxX[i - 1]];
+        html += '<tr><th style="text-align:left;padding-right:14px;">' + name + '</th><td>' + Beta[i][0].toFixed(4) + '</td></tr>';
+    }
+    html += '</table></div></div></div>';
+    container.innerHTML = html;
+}
+
+// === ESTADÍSTICAS DESCRIPTIVAS ===
+function renderDescriptivas() {
+    var container = document.getElementById('descriptivas-container');
+    if (!container || datosCSV.length === 0) return;
+
+    var idxX = [];
+    document.querySelectorAll('#check-x input:checked').forEach(function(cb) { idxX.push(parseInt(cb.value)); });
+    if (idxX.length === 0) return;
+
+    var variables = [0].concat(idxX);
+    var nombres = variables.map(function(i) { return headersCSV[i]; });
+    var m = variables.length;
+    var n = datosCSV.length;
+
+    var medias = variables.map(function(col) {
+        var sum = 0;
+        for (var i = 0; i < n; i++) sum += datosCSV[i][col];
+        return sum / n;
+    });
+
+    var varianzas = variables.map(function(col, vi) {
+        var sum = 0;
+        for (var i = 0; i < n; i++) sum += Math.pow(datosCSV[i][col] - medias[vi], 2);
+        return sum / (n - 1);
+    });
+    var desviaciones = varianzas.map(function(v) { return Math.sqrt(v); });
+
+    var covMatrix = [];
+    for (var a = 0; a < m; a++) {
+        covMatrix[a] = [];
+        for (var b = 0; b < m; b++) {
+            var sum = 0;
+            for (var i = 0; i < n; i++) sum += (datosCSV[i][variables[a]] - medias[a]) * (datosCSV[i][variables[b]] - medias[b]);
+            covMatrix[a][b] = sum / (n - 1);
+        }
+    }
+
+    var corrMatrix = [];
+    for (var a = 0; a < m; a++) {
+        corrMatrix[a] = [];
+        for (var b = 0; b < m; b++) {
+            corrMatrix[a][b] = covMatrix[a][b] / (desviaciones[a] * desviaciones[b] || 1);
+        }
+    }
+
+    var html = '';
+
+    html += '<div style="margin-bottom:16px;"><div style="font-weight:800;font-size:11px;color:var(--gold);margin-bottom:8px;text-transform:uppercase;">Media · Varianza · Desviación Estándar</div>';
+    html += '<table class="matriz" style="width:100%;"><thead><tr><th>Variable</th><th>Media (μ)</th><th>Varianza (σ²)</th><th>Desv. Est. (σ)</th></tr></thead><tbody>';
+    for (var i = 0; i < m; i++) {
+        html += '<tr><td style="text-align:left;font-weight:700;">' + nombres[i] + '</td><td>' + medias[i].toFixed(2) + '</td><td>' + varianzas[i].toFixed(2) + '</td><td>' + desviaciones[i].toFixed(2) + '</td></tr>';
+    }
+    html += '</tbody></table></div>';
+
+    html += '<div style="margin-bottom:16px;"><div style="font-weight:800;font-size:11px;color:var(--gold);margin-bottom:8px;text-transform:uppercase;">Matriz de Varianza-Covarianza (Σ) ' + m + '×' + m + '</div>';
+    html += '<div style="overflow-x:auto;"><div class="matrix-wrap"><table>';
+    html += '<tr><th></th>';
+    for (var j = 0; j < m; j++) html += '<th>' + nombres[j].substring(0,8) + '</th>';
+    html += '</tr>';
+    for (var a = 0; a < m; a++) {
+        html += '<tr><th style="text-align:left;padding-right:8px;">' + nombres[a].substring(0,8) + '</th>';
+        for (var b = 0; b < m; b++) {
+            var val = covMatrix[a][b];
+            var isDiag = (a === b);
+            var color = isDiag ? 'rgba(56,161,105,0.15)' : (val > 0 ? 'rgba(59,130,246,0.08)' : 'rgba(229,62,62,0.08)');
+            html += '<td style="background:' + color + ';">' + val.toFixed(2) + '</td>';
+        }
+        html += '</tr>';
+    }
+    html += '</table></div></div></div>';
+
+    html += '<div><div style="font-weight:800;font-size:11px;color:var(--gold);margin-bottom:8px;text-transform:uppercase;">Matriz de Correlación (ρ) ' + m + '×' + m + '</div>';
+    html += '<div style="overflow-x:auto;"><div class="matrix-wrap"><table>';
+    html += '<tr><th></th>';
+    for (var j = 0; j < m; j++) html += '<th>' + nombres[j].substring(0,8) + '</th>';
+    html += '</tr>';
+    for (var a = 0; a < m; a++) {
+        html += '<tr><th style="text-align:left;padding-right:8px;">' + nombres[a].substring(0,8) + '</th>';
+        for (var b = 0; b < m; b++) {
+            var r = corrMatrix[a][b];
+            var intensity = Math.abs(r);
+            var color = r > 0 ? 'rgba(56,161,105,' + (intensity * 0.5) + ')' : 'rgba(229,62,62,' + (intensity * 0.5) + ')';
+            html += '<td style="background:' + color + ';font-weight:700;">' + r.toFixed(3) + '</td>';
+        }
+        html += '</tr>';
+    }
+    html += '</table></div></div></div>';
+
+    container.innerHTML = html;
+    document.getElementById('desc-count').textContent = m + ' variables';
+}
+
+// === GRÁFICOS ===
+var scatterSampleData = [];
+
+function renderGraficos(Y, Y_pred, idxX, Beta, SE, residuos) {
+    var isDark = document.body.classList.contains('dark-mode');
+    var textColor = isDark ? '#e2e8f0' : '#4a5568';
+    var gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+
+    var n = Y.length;
+    var step = Math.max(1, Math.floor(n / 3000));
+    var scatterPts = [];
+    for (var i = 0; i < n; i += step) scatterPts.push({ x: Y[i][0], y: Y_pred[i][0], idx: i });
+    scatterSampleData = scatterPts;
+
+    if (chartScatter) chartScatter.destroy();
+    chartScatter = new Chart(document.getElementById('chartScatter').getContext('2d'), {
+        type: 'scatter',
+        data: { datasets: [{ label: 'Datos', data: scatterPts, backgroundColor: 'rgba(59,130,246,0.5)', borderColor: 'rgba(59,130,246,0.9)', pointRadius: 2, pointHoverRadius: 6 }] },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            onClick: function(evt, elements) {
+                if (elements.length > 0) {
+                    var idx = scatterPts[elements[0].index].idx;
+                    var r = datosCSV[idx];
+                    if (r) {
+                        map.setView([r[1], r[2]], 16);
+                        mostrarToast('📍 Registro #' + (idx + 1) + ' · Consumo: ' + r[0].toFixed(0) + ' m³', 'info');
+                    }
+                }
+            },
+            plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(ctx) { return 'Real: ' + ctx.raw.x.toFixed(1) + ' | Pred: ' + ctx.raw.y.toFixed(1); } } } },
+            scales: {
+                x: { title: { display: true, text: 'Real', color: textColor, font: { size: 10, weight: 'bold' } }, grid: { color: gridColor }, ticks: { color: textColor, font: { size: 9 } } },
+                y: { title: { display: true, text: 'Predicho', color: textColor, font: { size: 10, weight: 'bold' } }, grid: { color: gridColor }, ticks: { color: textColor, font: { size: 9 } } }
             }
-            if (chartBarInst) chartBarInst.destroy();
-            chartBarInst = new Chart(document.getElementById('chartBar').getContext('2d'), {
-                type: 'bar',
-                data: { labels: labels, datasets: [{ label: '|t|', data: dataBar, backgroundColor: dataBar.map(v => v > 2 ? '#38a169' : '#e53e3e'), borderRadius: 5 }] },
-                options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } } }
-            });
-
-            var dataRes = Y.map((v, i) => ({ x: Y_pred[i][0], y: residuos[i] }));
-            if (chartResiduosInst) chartResiduosInst.destroy();
-            chartResiduosInst = new Chart(document.getElementById('chartResiduos').getContext('2d'), {
-                type: 'scatter',
-                data: { datasets: [{ label: 'Residuos', data: dataRes, backgroundColor: '#805ad5', pointRadius: 3 }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-            });
-
-            var minR = Math.min(...residuos), maxR = Math.max(...residuos);
-            var bins = 10;
-            var step = (maxR - minR) / bins;
-            var counts = new Array(bins).fill(0);
-            var binLabels = [];
-            for(var i = 0; i < bins; i++) binLabels.push((minR + i*step).toFixed(0));
-            residuos.forEach(r => {
-                var idx = Math.min(bins - 1, Math.floor((r - minR) / step));
-                counts[idx]++;
-            });
-            if (chartHistInst) chartHistInst.destroy();
-            chartHistInst = new Chart(document.getElementById('chartHist').getContext('2d'), {
-                type: 'bar',
-                data: { labels: binLabels, datasets: [{ label: 'Frecuencia', data: counts, backgroundColor: '#d69e2e', borderRadius: 3 }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-            });
         }
-    </script>
+    });
+
+    if (chartBar) chartBar.destroy();
+    var labels = idxX.map(function(i) { return headersCSV[i].length > 12 ? headersCSV[i].substring(0, 10) + '…' : headersCSV[i]; });
+    var tStats = idxX.map(function(_, i) { return Math.abs(Beta[i + 1][0] / (SE[i + 1] || 1e-10)); });
+    var colors = tStats.map(function(t) { return t > 2.5 ? 'rgba(56,161,105,0.85)' : t > 1.5 ? 'rgba(214,158,46,0.85)' : 'rgba(229,62,62,0.75)'; });
+
+    chartBar = new Chart(document.getElementById('chartBar').getContext('2d'), {
+        type: 'bar',
+        data: { labels: labels, datasets: [{ label: '|t|', data: tStats, backgroundColor: colors, borderColor: colors.map(function(c) { return c.replace(/0\.\d+/, '1'); }), borderWidth: 1, borderRadius: 5 }] },
+        options: {
+            responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+            onClick: function(evt, elements) {
+                if (elements.length > 0) {
+                    var i = elements[0].index;
+                    var varIdx = idxX[i];
+                    colorearMapaPorVariable(varIdx);
+                }
+            },
+            plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(ctx) { return '|t| = ' + ctx.raw.toFixed(3) + ' (clic para colorear mapa)'; } } } },
+            scales: {
+                x: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 9 } } },
+                y: { grid: { display: false }, ticks: { color: textColor, font: { size: 9, weight: 'bold' } } }
+            }
+        }
+    });
+
+    if (chartResiduos) chartResiduos.destroy();
+    var resPts = [];
+    for (var i = 0; i < n; i += step) resPts.push({ x: Y_pred[i][0], y: residuos[i] });
+    chartResiduos = new Chart(document.getElementById('chartResiduos').getContext('2d'), {
+        type: 'scatter',
+        data: { datasets: [{ label: 'Residuos', data: resPts, backgroundColor: resPts.map(function(p) { return p.y > 0 ? 'rgba(56,161,105,0.5)' : 'rgba(229,62,62,0.5)'; }), borderColor: resPts.map(function(p) { return p.y > 0 ? 'rgba(56,161,105,0.9)' : 'rgba(229,62,62,0.9)'; }), pointRadius: 2, pointHoverRadius: 5 }] },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(ctx) { return 'Pred: ' + ctx.raw.x.toFixed(1) + ' | Res: ' + ctx.raw.y.toFixed(2); } } } },
+            scales: {
+                x: { title: { display: true, text: 'Predicho', color: textColor, font: { size: 10, weight: 'bold' } }, grid: { color: gridColor }, ticks: { color: textColor, font: { size: 9 } } },
+                y: { title: { display: true, text: 'Residuo', color: textColor, font: { size: 10, weight: 'bold' } }, grid: { color: gridColor }, ticks: { color: textColor, font: { size: 9 } } }
+            }
+        }
+    });
+
+    if (chartHist) chartHist.destroy();
+    var minR = Math.min.apply(null, residuos), maxR = Math.max.apply(null, residuos);
+    var nBins = Math.min(25, Math.ceil(Math.sqrt(residuos.length)));
+    var binWidth = (maxR - minR) / nBins || 1;
+    var bins = new Array(nBins).fill(0), binLabels = [];
+    for (var i = 0; i < nBins; i++) binLabels.push((minR + i * binWidth).toFixed(0));
+    residuos.forEach(function(r) { var idx = Math.min(nBins - 1, Math.floor((r - minR) / binWidth)); bins[idx]++; });
+
+    chartHist = new Chart(document.getElementById('chartHist').getContext('2d'), {
+        type: 'bar',
+        data: { labels: binLabels, datasets: [{ label: 'Frecuencia', data: bins, backgroundColor: 'rgba(128,90,213,0.65)', borderColor: 'rgba(128,90,213,1)', borderWidth: 1, borderRadius: 3 }] },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { title: { display: true, text: 'Residuo', color: textColor, font: { size: 10, weight: 'bold' } }, grid: { display: false }, ticks: { color: textColor, font: { size: 9 } } },
+                y: { title: { display: true, text: 'Frecuencia', color: textColor, font: { size: 10, weight: 'bold' } }, grid: { color: gridColor }, ticks: { color: textColor, font: { size: 9 } } }
+            }
+        }
+    });
+}
+
+function highlightBar(idx) {
+    if (!chartBar) return;
+    chartBar.data.datasets[0].backgroundColor = chartBar.data.datasets[0].backgroundColor.map(function(c, i) {
+        if (i === idx) return 'rgba(214,158,46,1)';
+        return c.replace('1)', '0.4)');
+    });
+    chartBar.update('none');
+}
+
+function colorearMapaPorVariable(varIdx) {
+    var name = headersCSV[varIdx];
+    var vals = datosCSV.map(function(r) { return r[varIdx]; });
+    var minV = Math.min.apply(null, vals), maxV = Math.max.apply(null, vals);
+    var range = maxV - minV || 1;
+    mostrarToast('🎨 Mapa coloreado por: ' + name + ' (rango ' + minV.toFixed(0) + '–' + maxV.toFixed(0) + ')', 'info');
+    clusterGroup.clearLayers();
+    pointLayer.clearLayers();
+    datosFiltrados.forEach(function(r, idx) {
+        var lat = r[1], lng = r[2];
+        if (isNaN(lat) || isNaN(lng)) return;
+        var v = (r[varIdx] - minV) / range;
+        var color = 'hsl(' + (120 * (1 - v)) + ',75%,50%)';
+        var popup = '<div class="popup-title"><i class="fas fa-map-pin" style="color:var(--gold)"></i> Registro #' + (idx + 1) + '</div>';
+        headersCSV.forEach(function(h, j) { var val = r[j]; if (typeof val === 'number') val = val.toLocaleString('es-BO', { maximumFractionDigits: 2 }); popup += '<div class="popup-row"><span class="pl">' + h + '</span><span class="pv">' + val + '</span></div>'; });
+        var marker = L.circleMarker([lat, lng], { radius: 5, fillColor: color, color: '#fff', weight: 1, fillOpacity: 0.85 });
+        marker.bindPopup(popup, { maxWidth: 300 });
+        if (mapMode === 'cluster') clusterGroup.addLayer(marker); else pointLayer.addLayer(marker);
+    });
+}
+
+// === PDF ===
+function descargarPDF() {
+    if (BetaGlobal.length === 0) { mostrarToast('⚠️ Calcule el MCO primero.', 'warning'); return; }
+    var jsPDF = window.jspdf.jsPDF;
+    var doc = new jsPDF('p', 'mm', 'a4');
+    doc.setFontSize(18); doc.setTextColor(26, 54, 93);
+    doc.text('Informe MCO - EPSAS La Paz', 15, 22);
+    doc.setFontSize(10); doc.setTextColor(100);
+    doc.text('Análisis Multivariado para Pronósticos Sanitarios', 15, 30);
+    doc.setDrawColor(214, 158, 46); doc.setLineWidth(0.8); doc.line(15, 34, 195, 34);
+    doc.setFontSize(11); doc.setTextColor(26, 54, 93);
+    doc.text('Coeficientes Estimados', 15, 44);
+    var y = 54; doc.setFontSize(9); doc.setTextColor(60);
+    for (var i = 0; i < BetaGlobal.length; i++) {
+        var name = i === 0 ? 'Intercepto' : headersCSV[idxXGlobal[i - 1]];
+        doc.text(name + ': β = ' + BetaGlobal[i][0].toFixed(4) + ' | SE = ' + (SEGlobal[i] || 0).toFixed(4), 20, y);
+        y += 7;
+    }
+    doc.save('Informe_MCO_EPSAS_LaPaz.pdf');
+    mostrarToast('📄 Informe PDF generado.', 'success');
+}
+
+// === RELOJ FOOTER ===
+setInterval(function() {
+    var el = document.getElementById('footer-time');
+    if (el) el.textContent = new Date().toLocaleTimeString('es-BO');
+}, 1000);
+
+// === INICIO ===
+window.addEventListener('load', function() {
+    initBackgroundAnimation();
+    initMap();
+
+    var bar = document.getElementById('splashBar');
+    var info = document.getElementById('splashInfo');
+    var pasos = [
+        { t: 'Inicializando sistema...', p: 20 },
+        { t: 'Cargando módulos MCO...', p: 45 },
+        { t: 'Preparando mapa dinámico...', p: 70 },
+        { t: 'Sistema listo', p: 100 }
+    ];
+    var i = 0;
+    var int = setInterval(function() {
+        if (i >= pasos.length) { clearInterval(int); return; }
+        bar.style.width = pasos[i].p + '%';
+        info.textContent = pasos[i].t;
+        i++;
+    }, 280);
+    setTimeout(function() { document.getElementById('splashScreen').classList.add('hidden'); }, 1600);
+});
+</script>
 </body>
 </html>

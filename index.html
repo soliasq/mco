@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EPSAS La Paz - MCO</title>
+<title>EPSAS La Paz - Dashboard MCO Dinámico</title>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
@@ -13,7 +13,6 @@
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -40,10 +39,8 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 .header-center{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .header-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .badge{padding:6px 14px;border-radius:20px;font-size:0.68rem;font-weight:700;background:rgba(255,255,255,0.8);color:#4a5568;border:1px solid rgba(255,255,255,0.9);display:inline-flex;align-items:center;gap:6px;transition:var(--transition)}
-.badge:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
 .badge.primary{background:rgba(219,234,254,0.95);color:var(--primary)}
 .badge.success{background:rgba(209,250,229,0.95);color:#065f46}
-.badge.warning{background:rgba(254,243,199,0.95);color:#92400e}
 .badge.live{background:rgba(254,226,226,0.95);color:#991b1b}
 .badge.live i{animation:pulse 1.5s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.35}}
@@ -52,8 +49,6 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 
 /* BOTONES */
 .btn-doc{padding:9px 16px;border:none;border-radius:10px;font-size:0.74rem;font-weight:700;cursor:pointer;transition:var(--transition);display:inline-flex;align-items:center;gap:7px;font-family:'Inter',sans-serif;color:white;position:relative;overflow:hidden}
-.btn-doc::after{content:'';position:absolute;inset:0;background:linear-gradient(120deg,transparent,rgba(255,255,255,0.35),transparent);transform:translateX(-100%);transition:transform .6s}
-.btn-doc:hover::after{transform:translateX(100%)}
 .btn-doc:hover{transform:translateY(-3px);box-shadow:0 8px 22px rgba(0,0,0,0.22)}
 .btn-doc:active{transform:translateY(-1px) scale(.98)}
 .btn-doc.primary{background:linear-gradient(135deg,var(--primary),var(--primary-light))}
@@ -61,8 +56,6 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 .btn-doc.purple{background:linear-gradient(135deg,#553c9a,#805ad5)}
 .btn-doc.cyan{background:linear-gradient(135deg,#086f83,#38b2ac)}
 .btn-doc.warning{background:linear-gradient(135deg,#b7791f,var(--gold))}
-.btn-doc.red{background:linear-gradient(135deg,#9b2c2c,#e53e3e)}
-.btn-doc.teal{background:linear-gradient(135deg,#285e61,#38b2ac)}
 
 /* LAYOUT */
 .main-content{display:flex;gap:12px;align-items:flex-start}
@@ -73,7 +66,6 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 .panel-title i{color:var(--gold)}
 
 .pond-section{background:linear-gradient(135deg,rgba(214,158,46,0.12),rgba(26,54,93,0.08));border:2px solid rgba(214,158,46,0.3);border-radius:12px;padding:14px;transition:var(--transition)}
-.pond-section:hover{border-color:var(--gold);box-shadow:0 6px 22px rgba(214,158,46,0.15)}
 .pond-title{font-size:11px;font-weight:800;color:var(--gold);text-transform:uppercase;display:flex;align-items:center;gap:7px;margin-bottom:12px}
 .pond-status{display:flex;align-items:center;gap:8px;padding:9px 12px;background:rgba(56,161,105,0.15);border-radius:8px;font-size:10px;font-weight:700;color:#2f855a;margin-top:10px}
 .pond-status .dot-status{width:9px;height:9px;border-radius:50%;background:var(--green);animation:pulse 1.5s infinite;flex-shrink:0}
@@ -87,7 +79,6 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 .btn:active{transform:translateY(0) scale(.98)}
 .btn-primary{background:linear-gradient(135deg,var(--primary),var(--primary-light));color:white}
 .btn-outline{background:rgba(255,255,255,0.85);color:#4a5568;border:1.5px solid rgba(0,0,0,0.08)}
-.btn-test{background:linear-gradient(135deg,#97266d,#d53f8c);color:white}
 
 .panel-right{flex:1;display:flex;flex-direction:column;gap:12px;min-width:0;animation:fadeIn .8s ease .1s both}
 @keyframes fadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
@@ -103,7 +94,6 @@ table.matriz{border-collapse:collapse;width:100%;font-size:10.5px}
 table.matriz th,table.matriz td{border:1px solid rgba(0,0,0,0.08);padding:5px 7px;text-align:center;min-width:34px;transition:background .2s}
 table.matriz th{background:rgba(26,54,93,0.12);color:var(--primary);font-weight:800;position:sticky;top:0}
 table.matriz td.fila-header{background:rgba(26,54,93,0.12);color:var(--primary);font-weight:800;position:sticky;left:0}
-table.matriz tbody tr{cursor:pointer;transition:background .15s}
 table.matriz tbody tr:hover td{background:rgba(214,158,46,0.12)}
 table.matriz td.sig{font-weight:800}
 table.matriz td.sig.sig1{color:var(--green)}
@@ -133,11 +123,10 @@ details.matriz-det .matriz-content{padding:0 16px 16px;overflow-x:auto}
 .matrix-wrap table{border-collapse:collapse;font-family:'JetBrains Mono',monospace;font-size:10.5px}
 .matrix-wrap td,.matrix-wrap th{padding:4px 9px;text-align:right;color:#2d3748}
 .matrix-wrap th{color:var(--primary);font-weight:800;border-bottom:1px solid rgba(26,54,93,0.2)}
-.matrix-wrap td{font-variant-numeric:tabular-nums}
 
 .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.mco-chart{width:100%;height:260px;background:linear-gradient(135deg,#f8fafc,#eef2f7);border-radius:10px;padding:12px;border:1px solid #e2e8f0;transition:var(--transition);position:relative}
-.mco-chart:hover{border-color:var(--gold);box-shadow:0 4px 18px rgba(214,158,46,0.12)}
+.mco-chart{width:100%;height:260px;background:linear-gradient(135deg,#f8fafc,#eef2f7);border-radius:10px;padding:12px;border:1px solid #e2e8f0;transition:var(--transition);position:relative;cursor:pointer;opacity:0.9;}
+.mco-chart:hover{border-color:var(--gold);box-shadow:0 4px 18px rgba(214,158,46,0.12);transform:scale(1.02);opacity:1;}
 .mco-chart canvas{width:100%!important;height:100%!important}
 
 /* MAPA GRANDE */
@@ -161,6 +150,31 @@ details.matriz-det .matriz-content{padding:0 16px 16px;overflow-x:auto}
 .popup-row .pl{color:var(--muted);font-weight:600}
 .popup-row .pv{color:var(--text);font-weight:800;font-variant-numeric:tabular-nums}
 
+/* MODAL PARA GRÁFICOS MEJORADO */
+#modal-grafico { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.85); backdrop-filter: blur(5px); z-index: 999999; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.3s ease; }
+#modal-grafico.active { display: flex; opacity: 1; }
+.modal-content { background: #fff; padding: 20px 25px; border-radius: 16px; width: 95%; height: 90%; max-width: 1400px; position: relative; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); display: flex; flex-direction: row; gap: 20px; transform: scale(0.95); transition: transform 0.3s ease; }
+#modal-grafico.active .modal-content { transform: scale(1); }
+.modal-left { flex: 2; display: flex; flex-direction: column; border-right: 1px solid #e2e8f0; padding-right: 20px; min-width: 0; }
+.modal-right { flex: 1; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; padding-left: 5px; }
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid var(--gold); }
+.modal-title { font-size: 20px; font-weight: 800; color: var(--primary); }
+.close-modal { background: none; border: none; font-size: 24px; cursor: pointer; color: #a0aec0; transition: color 0.2s; }
+.close-modal:hover { color: var(--red); }
+.modal-chart-area { flex: 1; position: relative; min-height: 300px; }
+.modal-chart-area canvas { width: 100% !important; height: 100% !important; }
+
+.info-box { background: #f8fafc; border-left: 4px solid var(--primary-light); padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 10px; }
+.info-box h4 { font-size: 14px; font-weight: 800; color: var(--primary); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+.info-box p { font-size: 12.5px; color: #4a5568; line-height: 1.6; margin-bottom: 10px; }
+.info-box ul { padding-left: 20px; margin-bottom: 10px; }
+.info-box li { font-size: 12px; color: #4a5568; margin-bottom: 6px; line-height: 1.5; }
+.info-box .metric-highlight { background: rgba(214,158,46,0.15); padding: 2px 6px; border-radius: 4px; font-weight: 700; color: #b7791f; font-family: 'JetBrains Mono', monospace; }
+.info-box.warning { border-left-color: var(--red); background: #fef2f2; }
+.info-box.warning h4 { color: var(--red); }
+.info-box.success { border-left-color: var(--green); background: #f0fdf4; }
+.info-box.success h4 { color: var(--green); }
+
 /* Footer original */
 .footer-real{background:var(--card);backdrop-filter:blur(16px);border-radius:var(--radius);border:1px solid rgba(255,255,255,0.7);padding:14px 20px;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:4px}
 .footer-real .fr-left{display:flex;align-items:center;gap:12px;color:var(--text)}
@@ -170,24 +184,6 @@ details.matriz-det .matriz-content{padding:0 16px 16px;overflow-x:auto}
 .footer-real .fr-left .fr-text .ft-sub{color:var(--muted);font-size:10px}
 .footer-real .fr-right{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:10px;font-weight:700}
 .footer-real .fr-right .status-dot{width:8px;height:8px;border-radius:50%;background:#48bb78;animation:pulse 1.5s infinite;box-shadow:0 0 8px #48bb78}
-
-/* Splash */
-.splash-screen{position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,#1a365d 0%,#2b6cb0 50%,#d69e2e 100%);display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:99999;transition:opacity .9s ease,visibility .9s ease;color:white;overflow:hidden}
-.splash-screen::before{content:'';position:absolute;width:600px;height:600px;background:radial-gradient(circle,rgba(255,255,255,0.12),transparent 70%);top:-200px;right:-150px;border-radius:50%;animation:float 8s ease-in-out infinite}
-.splash-screen::after{content:'';position:absolute;width:400px;height:400px;background:radial-gradient(circle,rgba(246,173,85,0.18),transparent 70%);bottom:-120px;left:-100px;border-radius:50%;animation:float 6s ease-in-out infinite reverse}
-@keyframes float{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(30px,-30px) scale(1.1)}}
-.splash-screen.hidden{opacity:0;visibility:hidden;pointer-events:none}
-.splash-logo{width:120px;height:120px;background:rgba(255,255,255,0.18);backdrop-filter:blur(12px);border-radius:32px;display:flex;align-items:center;justify-content:center;font-size:58px;margin-bottom:26px;animation:splashPulse 2s infinite;border:2px solid rgba(255,255,255,0.35);box-shadow:0 20px 60px rgba(0,0,0,0.3);position:relative;z-index:2}
-@keyframes splashPulse{0%,100%{transform:scale(1) rotate(0)}50%{transform:scale(1.06) rotate(3deg)}}
-.splash-title{font-size:38px;font-weight:900;margin-bottom:8px;letter-spacing:-0.5px;position:relative;z-index:2;text-shadow:0 4px 20px rgba(0,0,0,0.25)}
-.splash-title span{color:#fbd38d}
-.splash-subtitle{font-size:15px;color:rgba(255,255,255,0.92);margin-bottom:44px;font-weight:600;position:relative;z-index:2}
-.splash-loader{width:240px;height:6px;background:rgba(255,255,255,0.2);border-radius:6px;overflow:hidden;margin-bottom:22px;position:relative;z-index:2}
-.splash-loader-bar{height:100%;background:linear-gradient(90deg,#fbd38d,#f6ad55,#fbd38d);width:0%;transition:width .35s ease;border-radius:6px;box-shadow:0 0 12px rgba(251,211,141,0.6)}
-.splash-info{font-size:11px;opacity:0.85;letter-spacing:2px;text-transform:uppercase;font-weight:800;position:relative;z-index:2}
-.splash-user{position:absolute;bottom:34px;text-align:center;z-index:2}
-.splash-user .name{font-weight:800;font-size:16px;display:block;margin-bottom:4px}
-.splash-user .uni{font-size:10px;opacity:0.8}
 
 /* Toasts */
 .toast-container{position:fixed;top:20px;right:20px;z-index:99999;display:flex;flex-direction:column;gap:10px;max-width:420px}
@@ -218,7 +214,12 @@ details.matriz-det .matriz-content{padding:0 16px 16px;overflow-x:auto}
 @keyframes spin{to{transform:rotate(360deg)}}
 .loading-overlay .load-text{font-size:14px;font-weight:700;letter-spacing:1px}
 
-@media(max-width:1100px){.panel-left{width:300px}.charts-grid{grid-template-columns:1fr}}
+@media(max-width:1100px){
+    .panel-left{width:300px}.charts-grid{grid-template-columns:1fr}
+    .modal-content{flex-direction:column;height:95%;padding:15px}
+    .modal-left{border-right:none;border-bottom:1px solid #e2e8f0;padding-right:0;padding-bottom:15px;flex:1.2}
+    .modal-right{padding-left:0;flex:1}
+}
 @media(max-width:900px){.main-content{flex-direction:column}.panel-left{width:100%;max-height:none}.charts-grid{grid-template-columns:1fr}#map-container{height:60vh;min-height:450px}}
 </style>
 </head>
@@ -226,16 +227,21 @@ details.matriz-det .matriz-content{padding:0 16px 16px;overflow-x:auto}
 
 <canvas id="bgCanvas"></canvas>
 
-<!-- SPLASH -->
-<div class="splash-screen" id="splashScreen">
-    <div class="splash-logo"><i class="fas fa-truck-medical"></i></div>
-    <div class="splash-title">EPSAS <span>La Paz</span></div>
-    <div class="splash-subtitle">Módulo MCO · Análisis Multivariado</div>
-    <div class="splash-loader"><div class="splash-loader-bar" id="splashBar"></div></div>
-    <div class="splash-info" id="splashInfo">Inicializando sistema...</div>
-    <div class="splash-user">
-        <span class="name">EPSAS La Paz</span>
-        <span class="uni">Empresa Pública Social de Agua y Saneamiento</span>
+<!-- MODAL PARA GRÁFICOS GRANDES -->
+<div id="modal-grafico">
+    <div class="modal-content">
+        <div class="modal-left">
+            <div class="modal-header">
+                <div class="modal-title" id="modal-title">Gráfico</div>
+                <button class="close-modal" onclick="cerrarModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="modal-chart-area">
+                <canvas id="chartModal"></canvas>
+            </div>
+        </div>
+        <div class="modal-right" id="modal-info-container">
+            <!-- Aquí se inyecta la explicación dinámicamente -->
+        </div>
     </div>
 </div>
 
@@ -274,8 +280,8 @@ details.matriz-det .matriz-content{padding:0 16px 16px;overflow-x:auto}
             <div class="pond-section">
                 <div class="pond-title"><i class="fas fa-sliders-h"></i> Datos de Entrada</div>
                 <div style="display:flex;flex-direction:column;gap:7px">
-                    <button class="btn btn-primary" onclick="generarDatosDemo()"><i class="fas fa-flask"></i> Generar 15,000 (Demo)</button>
-                    <button class="btn btn-outline" onclick="document.getElementById('file-csv').click()"><i class="fas fa-upload"></i> Subir CSV real (15k)</button>
+                    <button class="btn btn-primary" onclick="generarDatosDemo()"><i class="fas fa-flask"></i> Generar Demo (15k)</button>
+                    <button class="btn btn-outline" onclick="document.getElementById('file-csv').click()"><i class="fas fa-upload"></i> Subir CSV real</button>
                 </div>
                 <div class="pond-status"><span class="dot-status"></span><span id="status-datos">Sin datos cargados</span></div>
             </div>
@@ -283,7 +289,7 @@ details.matriz-det .matriz-content{padding:0 16px 16px;overflow-x:auto}
             <div class="panel-title"><i class="fas fa-table"></i> Variables del Modelo</div>
             <div class="form-group">
                 <label><i class="fas fa-arrow-down"></i> Variable Dependiente (Y)</label>
-                <select id="sel-y" disabled><option>Consumo_m3</option></select>
+                <select id="sel-y" disabled onchange="actualizarModeloAutomatico()"><option>Consumo_m3</option></select>
             </div>
             <div class="form-group">
                 <label><i class="fas fa-arrow-right"></i> Variables Independientes (X)</label>
@@ -292,7 +298,7 @@ details.matriz-det .matriz-content{padding:0 16px 16px;overflow-x:auto}
                 </div>
             </div>
 
-            <button class="btn btn-primary" style="width:100%;padding:14px;font-size:14px;margin-top:4px;" onclick="ejecutarMCO()"><i class="fas fa-cogs"></i> Calcular MCO</button>
+            <button class="btn btn-primary" style="width:100%;padding:14px;font-size:14px;margin-top:4px;" onclick="ejecutarMCO()"><i class="fas fa-cogs"></i> Calcular MCO Dinámico</button>
 
             <div class="panel-title"><i class="fas fa-check-double"></i> Pruebas Diagnósticas</div>
             <div id="diag-box" style="font-size:11px;color:#4a5568;background:rgba(255,255,255,0.9);padding:12px;border-radius:10px;border:1px solid #e2e8f0;">
@@ -302,23 +308,31 @@ details.matriz-det .matriz-content{padding:0 16px 16px;overflow-x:auto}
 
         <!-- PANEL DERECHO -->
         <div class="panel-right">
-            <!-- Gráficos 2x2 -->
+            <!-- Gráficos 3x2 -->
             <div class="charts-grid">
-                <div class="structure-card">
+                <div class="structure-card" onclick="abrirModal('scatter')">
                     <div class="structure-header"><i class="fas fa-chart-scatter"></i> Real vs Predicho</div>
                     <div class="mco-chart"><canvas id="chartScatter"></canvas></div>
                 </div>
-                <div class="structure-card">
-                    <div class="structure-header"><i class="fas fa-chart-bar"></i> Importancia |t| <span style="margin-left:auto;font-size:9px;color:var(--muted);font-weight:600;text-transform:none;">clic = colorear mapa</span></div>
+                <div class="structure-card" onclick="abrirModal('bar')">
+                    <div class="structure-header"><i class="fas fa-chart-bar"></i> Importancia |t|</div>
                     <div class="mco-chart"><canvas id="chartBar"></canvas></div>
                 </div>
-                <div class="structure-card">
+                <div class="structure-card" onclick="abrirModal('residuos')">
                     <div class="structure-header"><i class="fas fa-chart-line"></i> Residuos vs Predicho</div>
                     <div class="mco-chart"><canvas id="chartResiduos"></canvas></div>
                 </div>
-                <div class="structure-card">
+                <div class="structure-card" onclick="abrirModal('hist')">
                     <div class="structure-header"><i class="fas fa-chart-area"></i> Histograma de Residuos</div>
                     <div class="mco-chart"><canvas id="chartHist"></canvas></div>
+                </div>
+                <div class="structure-card" onclick="abrirModal('qq')">
+                    <div class="structure-header"><i class="fas fa-chart-pie"></i> Gráfico Q-Q (Normalidad)</div>
+                    <div class="mco-chart"><canvas id="chartQQ"></canvas></div>
+                </div>
+                <div class="structure-card" onclick="abrirModal('dist')">
+                    <div class="structure-header"><i class="fas fa-wave-square"></i> Distribución Normal</div>
+                    <div class="mco-chart"><canvas id="chartDist"></canvas></div>
                 </div>
             </div>
 
@@ -353,13 +367,9 @@ details.matriz-det .matriz-content{padding:0 16px 16px;overflow-x:auto}
                     <div class="formula-line"><span class="label">σ² estimado</span> <span class="var">ŝ²</span> <span class="op">=</span> <span class="var">SSR</span> <span class="op">/</span> (<span class="var">n</span> <span class="op">−</span> <span class="var">k</span>) &nbsp;&nbsp; <span class="num">= Σeᵢ² / (n−k)</span></div>
                     <div class="formula-line"><span class="label">Error Estándar</span> <span class="var">SE</span>(<span class="var">β̂</span><span class="op">ᵢ</span>) <span class="op">=</span> √[ <span class="var">ŝ²</span> <span class="op">·</span> (<span class="var">X</span><span class="op">ᵀ</span><span class="var">X</span>)<span class="op">⁻¹</span><span class="op">ᵢᵢ</span> ]</div>
                     <div class="formula-line"><span class="label">t-Student</span> <span class="var">t</span><span class="op">ᵢ</span> <span class="op">=</span> <span class="var">β̂</span><span class="op">ᵢ</span> <span class="op">/</span> <span class="var">SE</span>(<span class="var">β̂</span><span class="op">ᵢ</span>) &nbsp;&nbsp; <span class="num">~ t(n−k)</span></div>
-                    <div class="formula-line"><span class="label">Distribución t</span> <span class="var">f</span>(<span class="var">t</span>) <span class="op">=</span> <span class="num">Γ((ν+1)/2)</span> <span class="op">/</span> [<span class="num">√(νπ)</span> <span class="op">·</span> <span class="num">Γ(ν/2)</span>] <span class="op">·</span> (1 <span class="op">+</span> <span class="var">t</span>²<span class="op">/</span><span class="var">ν</span>)<span class="op">^</span><span class="num">−(ν+1)/2</span></div>
-                    <div class="formula-line"><span class="label">p-valor</span> <span class="var">p</span> <span class="op">=</span> 2 <span class="op">·</span> <span class="var">P</span>(<span class="var">T</span> <span class="op">></span> |<span class="var">t</span><span class="op">ᵢ</span>|) &nbsp;&nbsp; <span class="num">gl = n − k</span></div>
                     <div class="formula-line"><span class="label">R²</span> <span class="num">R²</span> <span class="op">=</span> 1 <span class="op">−</span> (<span class="var">SSR</span> <span class="op">/</span> <span class="var">SST</span>) &nbsp;&nbsp; <span class="num">= 1 − Σeᵢ² / Σ(yᵢ−ȳ)²</span></div>
-                    <div class="formula-line"><span class="label">R² ajustado</span> <span class="num">R̄²</span> <span class="op">=</span> 1 <span class="op">−</span> [(<span class="var">SSR</span><span class="op">/</span>(<span class="var">n−k</span>)) <span class="op">/</span> (<span class="var">SST</span><span class="op">/</span>(<span class="var">n−1</span>))]</div>
                     <div class="formula-line"><span class="label">Durbin-Watson</span> <span class="var">DW</span> <span class="op">=</span> Σ(<span class="var">e</span><span class="op">ᵢ</span> <span class="op">−</span> <span class="var">e</span><span class="op">ᵢ₋₁</span>)² <span class="op">/</span> Σ<span class="var">e</span><span class="op">ᵢ</span>² &nbsp;&nbsp; <span class="num">≈ 2 ⇒ sin autocorrelación</span></div>
                     <div class="formula-line"><span class="label">Jarque-Bera</span> <span class="var">JB</span> <span class="op">=</span> (<span class="var">n</span><span class="op">/</span>6) <span class="op">·</span> [<span class="var">S</span>² <span class="op">+</span> (<span class="var">K</span><span class="op">−</span>3)²<span class="op">/</span>4] &nbsp;&nbsp; <span class="num">~ χ²(2)</span></div>
-                    <div class="formula-line"><span class="label">Breusch-Pagan</span> <span class="var">LM</span> <span class="op">=</span> <span class="var">n</span> <span class="op">·</span> <span class="var">R</span>²<span class="op">aux</span> &nbsp;&nbsp; <span class="num">~ χ²(k−1)</span></div>
                 </div>
             </div>
 
@@ -408,7 +418,26 @@ details.matriz-det .matriz-content{padding:0 16px 16px;overflow-x:auto}
 </div>
 
 <script>
-// === FONDO ===
+// === VARIABLES GLOBALES ===
+var datosCSV = [];
+var headersCSV = [];
+var BetaGlobal = [];
+var idxXGlobal = [];
+var SEGlobal = [];
+var chartScatter, chartBar, chartResiduos, chartHist, chartQQ, chartDist;
+var map, clusterGroup, heatLayer, pointLayer;
+var mapMode = 'cluster';
+var modalChart = null;
+var modeloCalculado = false;
+var filtroConsumo = 0;
+var consumoMax = 0;
+var datosFiltrados = [];
+var globalResiduos = [];
+var globalMediaY = 0;
+var globalSdRes = 0;
+var globalMeanRes = 0;
+
+// === FONDO ANIMADO ===
 function initBackgroundAnimation() {
     var canvas = document.getElementById('bgCanvas');
     if (!canvas) return;
@@ -426,16 +455,6 @@ function initBackgroundAnimation() {
             ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
             ctx.fillStyle = 'rgba(26,54,93,0.25)'; ctx.fill();
         }
-        for (var a = 0; a < particles.length; a++) {
-            for (var b = a+1; b < particles.length; b++) {
-                var dx = particles[a].x - particles[b].x, dy = particles[a].y - particles[b].y;
-                var dist = Math.sqrt(dx*dx + dy*dy);
-                if (dist < 160) {
-                    ctx.beginPath(); ctx.moveTo(particles[a].x, particles[a].y); ctx.lineTo(particles[b].x, particles[b].y);
-                    ctx.strokeStyle = 'rgba(214,158,46,' + ((1-dist/160)*0.22) + ')'; ctx.lineWidth = 0.6; ctx.stroke();
-                }
-            }
-        }
         requestAnimationFrame(animate);
     }
     animate();
@@ -452,51 +471,218 @@ function mostrarToast(mensaje, tipo, duracion) {
     c.appendChild(t);
     setTimeout(function() { t.style.opacity = '0'; t.style.transform = 'translateX(420px)'; setTimeout(function() { t.remove(); }, 350); }, duracion);
 }
+function mostrarLoading(texto) { document.getElementById('loadText').textContent = texto || 'Procesando...'; document.getElementById('loadingOverlay').classList.add('active'); }
+function ocultarLoading() { document.getElementById('loadingOverlay').classList.remove('active'); }
 
-function mostrarLoading(texto) {
-    document.getElementById('loadText').textContent = texto || 'Procesando...';
-    document.getElementById('loadingOverlay').classList.add('active');
+// === EXPLICACIONES DE LOS GRÁFICOS (MODAL) ===
+var explicaciones = {
+    scatter: {
+        title: 'Real vs Predicho',
+        html: `
+            <div class="info-box">
+                <h4><i class="fas fa-eye"></i> ¿Qué estás viendo?</h4>
+                <p>Cada punto azul representa un registro de tu base de datos. El <strong>eje X</strong> es el consumo real observado, y el <strong>eje Y</strong> es el consumo que el modelo MCO predice para ese mismo registro.</p>
+                <p>La <strong>línea roja punteada</strong> es la "línea de predicción perfecta" (donde Y = X).</p>
+            </div>
+            <div class="info-box success">
+                <h4><i class="fas fa-check-circle"></i> ¿Cómo interpretarlo?</h4>
+                <ul>
+                    <li>Si los puntos están <strong>muy pegados a la línea roja</strong>, el modelo predice con alta precisión (R² cercano a 1).</li>
+                    <li>Si están <strong>muy dispersos</strong>, el modelo no captura bien la realidad (R² bajo).</li>
+                    <li>Si ves una "nube" con forma de cono, podría haber problemas de heterocedasticidad.</li>
+                </ul>
+            </div>
+        `
+    },
+    bar: {
+        title: 'Importancia de Variables (|t|)',
+        html: `
+            <div class="info-box">
+                <h4><i class="fas fa-eye"></i> ¿Qué estás viendo?</h4>
+                <p>Este gráfico muestra el valor absoluto del estadístico <strong>t-Student</strong> para cada variable independiente (X).</p>
+                <p>Las barras más largas indican que esa variable tiene un impacto más fuerte y significativo sobre el Consumo (Y).</p>
+            </div>
+            <div class="info-box warning">
+                <h4><i class="fas fa-exclamation-triangle"></i> Regla de oro</h4>
+                <ul>
+                    <li>Si <span class="metric-highlight">|t| > 2.5</span>, la variable es <strong>altamente significativa</strong> (color verde en la tabla).</li>
+                    <li>Si <span class="metric-highlight">|t| < 1.5</span>, la variable casi no aporta información al modelo (color rojo).</li>
+                </ul>
+            </div>
+        `
+    },
+    residuos: {
+        title: 'Residuos vs Predicho',
+        html: `
+            <div class="info-box">
+                <h4><i class="fas fa-eye"></i> ¿Qué estás viendo?</h4>
+                <p>Un <strong>residuo</strong> es el error del modelo: <code>Residuo = Real - Predicho</code>. Este gráfico muestra esos errores contra los valores que predijo el modelo.</p>
+            </div>
+            <div class="info-box success">
+                <h4><i class="fas fa-check-circle"></i> ¿Cómo debe verse?</h4>
+                <ul>
+                    <li>Los puntos deben estar <strong>dispersos aleatoriamente</strong> alrededor de la línea horizontal del cero.</li>
+                    <li>No debe haber formas de "embudo" (heterocedasticidad) ni curvas (mala especificación).</li>
+                    <li>Si ves patrones, el modelo está dejando información sin capturar.</li>
+                </ul>
+            </div>
+        `
+    },
+    hist: {
+        title: 'Histograma de Residuos',
+        html: `
+            <div class="info-box">
+                <h4><i class="fas fa-eye"></i> ¿Qué estás viendo?</h4>
+                <p>La distribución de frecuencias de los errores del modelo agrupados en barras.</p>
+            </div>
+            <div class="info-box success">
+                <h4><i class="fas fa-check-circle"></i> ¿Cómo debe verse?</h4>
+                <ul>
+                    <li>Debe tener forma de <strong>campana simétrica</strong> centrada en 0.</li>
+                    <li>Si ves barras muy altas en los extremos o asimetría, el modelo falla en esos puntos.</li>
+                </ul>
+            </div>
+        `
+    },
+    qq: {
+        title: 'Gráfico Q-Q (Normalidad)',
+        html: `
+            <div class="info-box">
+                <h4><i class="fas fa-eye"></i> ¿Qué estás viendo?</h4>
+                <p>El gráfico <strong>Quantile-Quantile</strong> compara los cuantiles de tus residuos reales (puntos dorados) contra los cuantiles de una distribución normal perfecta (línea azul).</p>
+            </div>
+            <div class="info-box success">
+                <h4><i class="fas fa-check-circle"></i> ¿Cómo debe verse?</h4>
+                <ul>
+                    <li>Los puntos deben estar <strong>pegados a la línea azul</strong>.</li>
+                    <li>Si las colas se despegan mucho (forma de "S"), hay valores atípicos o curtosis alta.</li>
+                </ul>
+            </div>
+        `
+    },
+    dist: {
+        title: 'Distribución Normal de Residuos',
+        html: `
+            <div class="info-box">
+                <h4><i class="fas fa-eye"></i> ¿Qué estás viendo?</h4>
+                <p>Esta es la <strong>Campana de Gauss calculada con la media y desviación estándar REALES</strong> de tus residuos, no una curva genérica.</p>
+                <p>La zona sombreada cubre desde -2 desviaciones hasta +2 desviaciones estándar, donde debería estar el 95% de tus datos si el modelo es correcto.</p>
+            </div>
+            <div class="info-box success">
+                <h4><i class="fas fa-check-circle"></i> Datos del modelo</h4>
+                <ul>
+                    <li>Media de los residuos: <span class="metric-highlight">${globalMeanRes ? globalMeanRes.toFixed(4) : '0.0000'}</span></li>
+                    <li>Desviación estándar: <span class="metric-highlight">${globalSdRes ? globalSdRes.toFixed(2) : '0.00'}</span></li>
+                    <li>Si la media es cercana a 0, el modelo no tiene sesgo sistemático.</li>
+                </ul>
+            </div>
+        `
+    }
+};
+
+// === MODAL PARA GRÁFICOS ===
+function abrirModal(tipo) {
+    if (!modeloCalculado) { mostrarToast('⚠️ Ejecute el MCO primero.', 'warning'); return; }
+    
+    var info = explicaciones[tipo];
+    if (!info) return;
+
+    // Actualizar el HTML de la explicación con las variables actuales si es dist
+    var htmlInfo = info.html;
+    if (tipo === 'dist') {
+        htmlInfo = `
+            <div class="info-box">
+                <h4><i class="fas fa-eye"></i> ¿Qué estás viendo?</h4>
+                <p>Esta es la <strong>Campana de Gauss calculada con la media y desviación estándar REALES</strong> de tus residuos, no una curva genérica.</p>
+                <p>La zona sombreada cubre desde -2 desviaciones hasta +2 desviaciones estándar, donde debería estar el 95% de tus datos si el modelo es correcto.</p>
+            </div>
+            <div class="info-box success">
+                <h4><i class="fas fa-check-circle"></i> Datos del modelo</h4>
+                <ul>
+                    <li>Media de los residuos: <span class="metric-highlight">${globalMeanRes ? globalMeanRes.toFixed(4) : '0.0000'}</span></li>
+                    <li>Desviación estándar: <span class="metric-highlight">${globalSdRes ? globalSdRes.toFixed(2) : '0.00'}</span></li>
+                    <li>Si la media es cercana a 0, el modelo no tiene sesgo sistemático.</li>
+                </ul>
+            </div>
+        `;
+    }
+
+    document.getElementById('modal-title').textContent = info.title;
+    document.getElementById('modal-info-container').innerHTML = htmlInfo;
+    
+    var canvasIdMap = {
+        scatter: 'chartScatter',
+        bar: 'chartBar',
+        residuos: 'chartResiduos',
+        hist: 'chartHist',
+        qq: 'chartQQ',
+        dist: 'chartDist'
+    };
+    
+    var originalCanvas = document.getElementById(canvasIdMap[tipo]);
+    var ctx = document.getElementById('chartModal').getContext('2d');
+    
+    if (modalChart) modalChart.destroy();
+    
+    var configStr = originalCanvas.getAttribute('data-config');
+    if (configStr) {
+        var config = JSON.parse(configStr);
+        // Animación más lenta en modal para efecto visual
+        config.options.animation = { duration: 800, easing: 'easeOutQuart' };
+        // Ajustar un poco el tamaño de los puntos si es scatter
+        if (config.type === 'scatter') {
+            config.data.datasets.forEach(function(ds) {
+                if (ds.type !== 'line') ds.pointRadius = 3;
+            });
+        }
+        modalChart = new Chart(ctx, config);
+    }
+    
+    document.getElementById('modal-grafico').classList.add('active');
 }
-function ocultarLoading() {
-    document.getElementById('loadingOverlay').classList.remove('active');
+
+function cerrarModal() {
+    document.getElementById('modal-grafico').classList.remove('active');
+    if (modalChart) { modalChart.destroy(); modalChart = null; }
 }
 
-// === ESTADO ===
-var datosCSV = [];
-var headersCSV = [];
-var BetaGlobal = [];
-var XtXGlobal = [];
-var XtYGlobal = [];
-var SEGlobal = [];
-var idxXGlobal = [];
-var chartScatter, chartBar, chartResiduos, chartHist;
-var map, clusterGroup, heatLayer, pointLayer;
-var mapMode = 'cluster';
-var filtroConsumo = 0;
-var consumoMax = 0;
-var datosFiltrados = [];
-
+// === MAPA ===
 function initMap() {
     map = L.map('map', { preferCanvas: true, zoomControl: true }).setView([-16.5, -68.15], 12);
-    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Tiles &copy; Esri' }).addTo(map);
-    clusterGroup = L.markerClusterGroup({ maxClusterRadius: 60, spiderfyOnMaxZoom: true, showCoverageOnHover: false, chunkedLoading: true, chunkInterval: 100, chunkDelay: 20 });
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 }).addTo(map);
+    
+    if (typeof L.markerClusterGroup === 'function') {
+        clusterGroup = L.markerClusterGroup({ maxClusterRadius: 60, spiderfyOnMaxZoom: true, chunkedLoading: true });
+    } else {
+        clusterGroup = L.layerGroup();
+    }
     pointLayer = L.layerGroup();
-    heatLayer = null;
     map.addLayer(clusterGroup);
 }
 
-function setMapMode(mode) {
-    mapMode = mode;
-    ['btn-cluster','btn-heat','btn-points'].forEach(function(id) { document.getElementById(id).classList.remove('active'); });
-    document.getElementById('btn-' + mode).classList.add('active');
-    map.removeLayer(clusterGroup); map.removeLayer(pointLayer);
-    if (heatLayer) { map.removeLayer(heatLayer); heatLayer = null; }
-    if (mode === 'cluster') map.addLayer(clusterGroup);
-    else if (mode === 'points') map.addLayer(pointLayer);
-    actualizarMapa();
+// === LEER CSV DINÁMICO ===
+function cargarCSV(event) {
+    var file = event.target.files[0]; if (!file) return;
+    mostrarLoading('Leyendo ' + file.name + '...');
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        setTimeout(function() {
+            var lines = e.target.result.split('\n').map(function(l) { return l.trim(); }).filter(function(l) { return l.length > 0; });
+            headersCSV = lines[0].split(',').map(function(h) { return h.replace(/"/g, '').trim(); });
+            var data = [];
+            for (var i = 1; i < lines.length; i++) {
+                var row = lines[i].split(',').map(function(v) { return parseFloat(v); });
+                if (row.length === headersCSV.length && !row.some(isNaN)) data.push(row);
+            }
+            procesarDatos(data);
+            ocultarLoading();
+            mostrarToast('✅ CSV cargado: ' + data.length + ' registros reales.', 'success');
+        }, 50);
+    };
+    reader.readAsText(file);
 }
 
-// === DATOS DEMO 15,000 ===
+// === GENERAR DEMO DINÁMICO ===
 function generarDatosDemo() {
     mostrarLoading('Generando 15,000 registros...');
     setTimeout(function() {
@@ -524,38 +710,24 @@ function generarDatosDemo() {
     }, 100);
 }
 
-// === CARGAR CSV ===
-function cargarCSV(event) {
-    var file = event.target.files[0]; if (!file) return;
-    mostrarLoading('Leyendo ' + file.name + '...');
-    var reader = new FileReader();
-    reader.onload = function(e) {
-        setTimeout(function() {
-            var lines = e.target.result.split('\n').map(function(l) { return l.trim(); }).filter(function(l) { return l.length > 0; });
-            headersCSV = lines[0].split(',').map(function(h) { return h.replace(/"/g, '').trim(); });
-            var data = [];
-            for (var i = 1; i < lines.length; i++) {
-                var row = lines[i].split(',').map(function(v) { return parseFloat(v); });
-                if (row.length === headersCSV.length && !row.some(isNaN)) data.push(row);
-            }
-            procesarDatos(data);
-            ocultarLoading();
-            mostrarToast('✅ CSV cargado: ' + data.length + ' registros reales.', 'success');
-        }, 50);
-    };
-    reader.readAsText(file);
-}
-
-// === PROCESAR DATOS ===
+// === PROCESAR DATOS Y POBLAR INTERFAZ ===
 function procesarDatos(data) {
     datosCSV = data;
+    modeloCalculado = false;
     document.getElementById('badge-registros').textContent = data.length.toLocaleString() + ' Registros';
     document.getElementById('status-datos').textContent = 'Datos cargados (' + data.length.toLocaleString() + ')';
 
+    var selY = document.getElementById('sel-y'); selY.innerHTML = '';
+    headersCSV.forEach(function(h, i) { selY.innerHTML += '<option value="' + i + '">' + h + '</option>'; });
+    selY.disabled = false;
+    
+    var idxConsumo = headersCSV.indexOf('Consumo_m3');
+    if (idxConsumo !== -1) selY.value = idxConsumo;
+
     var checkX = document.getElementById('check-x'); checkX.innerHTML = '';
     headersCSV.forEach(function(h, i) {
-        if (i >= 3) {
-            checkX.innerHTML += '<label style="font-size:11px;display:flex;align-items:center;gap:6px;margin-bottom:4px;padding:3px 5px;border-radius:6px;cursor:pointer;transition:background .2s;font-weight:600;" onmouseover="this.style.background=\'rgba(214,158,46,0.08)\'" onmouseout="this.style.background=\'transparent\'"><input type="checkbox" value="' + i + '" checked style="accent-color:var(--primary);width:14px;height:14px;"> ' + h + '</label>';
+        if (i !== headersCSV.indexOf('Latitud') && i !== headersCSV.indexOf('Longitud') && i !== parseInt(selY.value)) {
+            checkX.innerHTML += '<label style="font-size:11px;display:flex;align-items:center;gap:6px;margin-bottom:4px;padding:3px 5px;border-radius:6px;cursor:pointer;font-weight:600;" onmouseover="this.style.background=\'rgba(214,158,46,0.08)\'" onmouseout="this.style.background=\'transparent\'"><input type="checkbox" value="' + i + '" checked style="accent-color:var(--primary);width:14px;height:14px;" onchange="actualizarModeloAutomatico()"> ' + h + '</label>';
         }
     });
 
@@ -568,18 +740,23 @@ function procesarDatos(data) {
 
     renderMapa();
     renderDescriptivas();
-    document.querySelector('#tabla-mco tbody').innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted);">Datos listos. Presione "Calcular MCO"</td></tr>';
+    document.querySelector('#tabla-mco tbody').innerHTML = '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--muted);">Datos listos. Presione "Calcular MCO Dinámico"</td></tr>';
     document.getElementById('coef-count').textContent = '0';
+    document.getElementById('badge-r2').innerHTML = '<i class="fas fa-chart-pie"></i> R²: --';
     document.getElementById('diag-box').innerHTML = '<div class="empty-state" style="padding:16px 8px"><i class="fas fa-flask"></i><div class="es-title">Datos cargados</div><div class="es-sub">Ejecute el MCO para diagnósticos</div></div>';
     document.getElementById('matriz-container').innerHTML = '<div class="empty-state"><i class="fas fa-calculator"></i><div class="es-title">Sin matriz calculada</div><div class="es-sub">Ejecute el MCO</div></div>';
-    document.getElementById('badge-r2').innerHTML = '<i class="fas fa-chart-pie"></i> R²: --';
+}
+
+// === INTERACCIÓN AUTOMÁTICA ===
+function actualizarModeloAutomatico() {
+    if (!modeloCalculado) return;
+    ejecutarMCO(true);
 }
 
 // === MAPA DINÁMICO ===
 function renderMapa() {
     if (!map) return;
-    clusterGroup.clearLayers();
-    pointLayer.clearLayers();
+    clusterGroup.clearLayers(); pointLayer.clearLayers();
     if (heatLayer) { map.removeLayer(heatLayer); heatLayer = null; }
 
     filtroConsumo = parseFloat(document.getElementById('filtro-consumo').value) || 0;
@@ -587,36 +764,44 @@ function renderMapa() {
 
     datosFiltrados = datosCSV.filter(function(r) { return r[0] >= filtroConsumo; });
 
+    var idxLat = headersCSV.indexOf('Latitud');
+    var idxLon = headersCSV.indexOf('Longitud');
+    if (idxLat === -1 || idxLon === -1) return;
+
     var heatPoints = [];
     datosFiltrados.forEach(function(r, idx) {
-        var lat = r[1], lng = r[2], consumo = r[0];
+        var lat = r[idxLat], lng = r[idxLon], consumo = r[0];
         if (isNaN(lat) || isNaN(lng)) return;
-        heatPoints.push([lat, lng, consumo / (consumoMax || 1)]);
+        heatPoints.push([lat, lng, 0.5]);
 
-        if (mapMode === 'cluster' || mapMode === 'points') {
-            var color = consumo > consumoMax * 0.7 ? '#e53e3e' : consumo > consumoMax * 0.4 ? '#d69e2e' : '#38a169';
-            var popup = '<div class="popup-title"><i class="fas fa-map-pin" style="color:var(--gold)"></i> Registro #' + (idx + 1) + '</div>';
-            headersCSV.forEach(function(h, j) {
-                var val = r[j];
-                if (typeof val === 'number') val = val.toLocaleString('es-BO', { maximumFractionDigits: 2 });
-                popup += '<div class="popup-row"><span class="pl">' + h + '</span><span class="pv">' + val + '</span></div>';
-            });
-            var marker = L.circleMarker([lat, lng], { radius: 5, fillColor: color, color: '#fff', weight: 1, fillOpacity: 0.85 });
-            marker.bindPopup(popup, { maxWidth: 300 });
-            marker.bindTooltip('Consumo: ' + consumo.toFixed(0) + ' m³', { direction: 'top', offset: [0, -6] });
-            if (mapMode === 'cluster') clusterGroup.addLayer(marker);
-            else pointLayer.addLayer(marker);
-        }
+        var popup = '<div class="popup-title"><i class="fas fa-map-pin" style="color:var(--gold)"></i> Registro #' + (idx + 1) + '</div>';
+        headersCSV.forEach(function(h, j) {
+            var val = r[j];
+            if (typeof val === 'number') val = val.toLocaleString('es-BO', { maximumFractionDigits: 2 });
+            popup += '<div class="popup-row"><span class="pl">' + h + '</span><span class="pv">' + val + '</span></div>';
+        });
+        var color = consumo > consumoMax * 0.7 ? '#e53e3e' : consumo > consumoMax * 0.4 ? '#d69e2e' : '#38a169';
+        var marker = L.circleMarker([lat, lng], { radius: 5, fillColor: color, color: '#fff', weight: 1, fillOpacity: 0.85 });
+        marker.bindPopup(popup, { maxWidth: 300 });
+        if (mapMode === 'cluster') clusterGroup.addLayer(marker); else pointLayer.addLayer(marker);
     });
 
     if (mapMode === 'heat') {
         heatLayer = L.heatLayer(heatPoints, { radius: 22, blur: 18, maxZoom: 17, minOpacity: 0.3, gradient: { 0.2: '#38a169', 0.5: '#d69e2e', 0.8: '#e53e3e', 1: '#9b2c2c' } });
         map.addLayer(heatLayer);
     }
-
     document.getElementById('map-count').textContent = datosFiltrados.length.toLocaleString() + ' puntos';
 }
-
+function setMapMode(mode) {
+    mapMode = mode;
+    ['btn-cluster','btn-heat','btn-points'].forEach(function(id) { document.getElementById(id).classList.remove('active'); });
+    document.getElementById('btn-' + mode).classList.add('active');
+    map.removeLayer(clusterGroup); map.removeLayer(pointLayer);
+    if (heatLayer) { map.removeLayer(heatLayer); heatLayer = null; }
+    if (mode === 'cluster') map.addLayer(clusterGroup);
+    else if (mode === 'points') map.addLayer(pointLayer);
+    renderMapa();
+}
 function filtrarMapa() { renderMapa(); }
 
 // === OPERACIONES MATRICIALES ===
@@ -640,21 +825,29 @@ function matTranspose(A) {
     }
     return res;
 }
-function matInverse(A) {
-    var n = A.length, M = [];
+function matInversePivot(A) {
+    var n = A.length;
+    var M = [];
     for (var i = 0; i < n; i++) {
         M[i] = [];
         for (var j = 0; j < n; j++) M[i][j] = A[i][j];
         for (var j = 0; j < n; j++) M[i][j + n] = (i === j) ? 1 : 0;
     }
     for (var i = 0; i < n; i++) {
+        var maxRow = i;
+        for (var r = i + 1; r < n; r++) {
+            if (Math.abs(M[r][i]) > Math.abs(M[maxRow][i])) maxRow = r;
+        }
+        if (maxRow !== i) {
+            var tmp = M[i]; M[i] = M[maxRow]; M[maxRow] = tmp;
+        }
         var pivot = M[i][i];
         if (Math.abs(pivot) < 1e-12) return null;
         for (var j = 0; j < 2 * n; j++) M[i][j] /= pivot;
-        for (var k = 0; k < n; k++) {
-            if (k !== i) {
-                var factor = M[k][i];
-                for (var j = 0; j < 2 * n; j++) M[k][j] -= factor * M[i][j];
+        for (var k2 = 0; k2 < n; k2++) {
+            if (k2 !== i) {
+                var factor = M[k2][i];
+                for (var j = 0; j < 2 * n; j++) M[k2][j] -= factor * M[i][j];
             }
         }
     }
@@ -663,10 +856,48 @@ function matInverse(A) {
     return inv;
 }
 
-// === P-VALOR t ===
+// === ESTANDARIZACIÓN Y DESESTANDARIZACIÓN ===
+function estandarizarMatriz(X) {
+    var n = X.length, k = X[0].length;
+    var medias = new Array(k).fill(0);
+    var desvs = new Array(k).fill(0);
+    for (var j = 1; j < k; j++) {
+        var sum = 0;
+        for (var i = 0; i < n; i++) sum += X[i][j];
+        medias[j] = sum / n;
+    }
+    for (var j = 1; j < k; j++) {
+        var sum = 0;
+        for (var i = 0; i < n; i++) sum += Math.pow(X[i][j] - medias[j], 2);
+        desvs[j] = Math.sqrt(sum / (n - 1)) || 1;
+    }
+    var Xs = [];
+    for (var i = 0; i < n; i++) {
+        var row = [1];
+        for (var j = 1; j < k; j++) {
+            row.push((X[i][j] - medias[j]) / desvs[j]);
+        }
+        Xs.push(row);
+    }
+    return { Xs: Xs, medias: medias, desvs: desvs };
+}
+function desestandarizarBeta(BetaS, medias, desvs) {
+    var k = BetaS.length;
+    var Beta = [];
+    var intercepto = BetaS[0][0];
+    for (var j = 1; j < k; j++) {
+        intercepto -= BetaS[j][0] * medias[j] / desvs[j];
+    }
+    Beta.push([intercepto]);
+    for (var j = 1; j < k; j++) {
+        Beta.push([BetaS[j][0] / desvs[j]]);
+    }
+    return Beta;
+}
+
+// === P-VALOR (Distribución t) ===
 function gammaFn(z) {
-    var g = 7;
-    var C = [0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313, -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
+    var g = 7; var C = [0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313, -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
     if (z < 0.5) return Math.PI / (Math.sin(Math.PI * z) * gammaFn(1 - z));
     z -= 1; var x = C[0];
     for (var i = 1; i < g + 2; i++) x += C[i] / (z + i);
@@ -674,6 +905,8 @@ function gammaFn(z) {
     return Math.sqrt(2 * Math.PI) * Math.pow(t, z + 0.5) * Math.exp(-t) * x;
 }
 function betaIncomplete(a, b, x) {
+    if (x <= 0) return 0;
+    if (x >= 1) return 1;
     var bt = Math.exp(gammaFn(a + b) - gammaFn(a) - gammaFn(b) + a * Math.log(x) + b * Math.log(1 - x));
     if (x < (a + 1) / (a + b + 2)) return bt * betacf(a, b, x) / a;
     else return 1 - bt * betacf(b, a, 1 - x) / b;
@@ -698,40 +931,53 @@ function betacf(a, b, x) {
     }
     return h;
 }
-function pValorT(t, df) {
-    var x = df / (df + t * t);
-    return betaIncomplete(df / 2, 0.5, x);
+function pValorT(t, df) { 
+    if (!isFinite(t) || !isFinite(df) || df <= 0) return 1;
+    return betaIncomplete(df / 2, 0.5, df / (df + t * t)); 
 }
 
-// === MOTOR MCO ===
-function ejecutarMCO() {
+// === MOTOR MCO DINÁMICO ===
+function ejecutarMCO(esAutomatico) {
     if (datosCSV.length === 0) { mostrarToast('⚠️ Cargue datos primero.', 'warning'); return; }
 
+    var idxY = parseInt(document.getElementById('sel-y').value);
     var idxX = [];
     document.querySelectorAll('#check-x input:checked').forEach(function(cb) { idxX.push(parseInt(cb.value)); });
     if (idxX.length === 0) { mostrarToast('⚠️ Seleccione al menos una X.', 'warning'); return; }
     idxXGlobal = idxX;
 
-    mostrarLoading('Calculando MCO con ' + datosCSV.length.toLocaleString() + ' registros...');
+    if (!esAutomatico) mostrarLoading('Calculando MCO con ' + datosCSV.length.toLocaleString() + ' registros...');
 
     setTimeout(function() {
         try {
             var Y = [], X = [], n = datosCSV.length, k = idxX.length + 1;
             for (var i = 0; i < n; i++) {
-                Y.push([datosCSV[i][0]]);
+                Y.push([datosCSV[i][idxY]]);
                 var row = [1];
                 for (var j = 0; j < idxX.length; j++) row.push(datosCSV[i][idxX[j]]);
                 X.push(row);
             }
 
-            var Xt = matTranspose(X);
-            var XtX = matMul(Xt, X);
+            // --- ESTANDARIZAR X ---
+            var est = estandarizarMatriz(X);
+            var Xs = est.Xs;
+            var medias = est.medias;
+            var desvs = est.desvs;
+
+            // --- CALCULAR MCO SOBRE X ESTANDARIZADA ---
+            var Xt = matTranspose(Xs);
+            var XtX = matMul(Xt, Xs);
             var XtY = matMul(Xt, Y);
-            var XtX_inv = matInverse(XtX);
+            var XtX_inv = matInversePivot(XtX);
             if (!XtX_inv) { ocultarLoading(); mostrarToast('❌ Multicolinealidad perfecta. Revise variables.', 'error'); return; }
 
-            var Beta = matMul(XtX_inv, XtY);
-            BetaGlobal = Beta; XtXGlobal = XtX; XtYGlobal = XtY;
+            var BetaS = matMul(XtX_inv, XtY);
+
+            // --- DESESTANDARIZAR β ---
+            var Beta = desestandarizarBeta(BetaS, medias, desvs);
+            BetaGlobal = Beta;
+
+            // Predicciones sobre X original
             var Y_pred = matMul(X, Beta);
 
             var residuos = [], SSR = 0, SST = 0;
@@ -750,22 +996,33 @@ function ejecutarMCO() {
 
             var gl = n - k;
             var sigma2 = SSR / gl;
+
+            // --- SE EN ESCALA ORIGINAL ---
             var SE = [];
-            for (var i = 0; i < k; i++) SE.push(Math.sqrt(sigma2 * XtX_inv[i][i]));
+            for (var i = 0; i < k; i++) {
+                var varStd = sigma2 * XtX_inv[i][i];
+                var factor = (i === 0) ? 1 : (1 / desvs[i]);
+                SE.push(Math.sqrt(varStd) * factor);
+            }
             SEGlobal = SE;
 
             var tbody = document.querySelector('#tabla-mco tbody');
             tbody.innerHTML = '';
             for (var i = 0; i < k; i++) {
                 var name = i === 0 ? 'Intercepto' : headersCSV[idxX[i - 1]];
-                var tStat = Beta[i][0] / SE[i];
-                var pVal = pValorT(Math.abs(tStat), gl);
+                var tStat = (SE[i] > 1e-12) ? (Beta[i][0] / SE[i]) : 0;
+                var pVal = isFinite(tStat) && isFinite(SE[i]) && SE[i] > 1e-12
+                    ? pValorT(Math.abs(tStat), gl)
+                    : 1;
                 var sig = pVal < 0.01 ? '***' : pVal < 0.05 ? '**' : pVal < 0.10 ? '*' : 'n.s.';
                 var sigClass = pVal < 0.01 ? 'sig1' : pVal < 0.05 ? 'sig2' : pVal < 0.10 ? 'sig3' : 'sig4';
                 var tr = document.createElement('tr');
-                tr.innerHTML = '<td style="text-align:left;font-weight:700;">' + name + '</td><td>' + Beta[i][0].toFixed(4) + '</td><td>' + SE[i].toFixed(4) + '</td><td>' + tStat.toFixed(3) + '</td><td>' + pVal.toFixed(4) + '</td><td class="sig ' + sigClass + '">' + sig + '</td>';
-                tr.onmouseenter = (function(idx) { return function() { highlightBar(idx); }; })(i - 1);
-                tr.onmouseleave = function() { highlightBar(-1); };
+                tr.innerHTML = '<td style="text-align:left;font-weight:700;">' + name + '</td>'
+                    + '<td>' + Beta[i][0].toFixed(6) + '</td>'
+                    + '<td>' + (SE[i] > 1e-12 ? SE[i].toExponential(3) : '< 1e-12') + '</td>'
+                    + '<td>' + (isFinite(tStat) ? tStat.toFixed(3) : '—') + '</td>'
+                    + '<td>' + (isFinite(pVal) ? pVal.toFixed(4) : '—') + '</td>'
+                    + '<td class="sig ' + sigClass + '">' + sig + '</td>';
                 tbody.appendChild(tr);
             }
             document.getElementById('coef-count').textContent = k;
@@ -792,25 +1049,207 @@ function ejecutarMCO() {
                 { label: 'Homocedasticidad (BP)', val: 'OK', ok: true },
                 { label: 'Multicolinealidad (VIF)', val: 'OK', ok: true }
             ].forEach(function(d) {
-                var cls = d.ok ? 'ok' : 'warn';
                 var iconBg = d.ok ? 'linear-gradient(135deg,#38a169,#276749)' : 'linear-gradient(135deg,#d69e2e,#b7791f)';
                 diagBox.innerHTML += '<div style="display:flex;align-items:center;gap:8px;padding:7px 0;font-size:11px;border-bottom:1px solid rgba(0,0,0,0.04)"><div style="width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;color:white;flex-shrink:0;background:' + iconBg + '"><i class="fas fa-check-circle"></i></div><div style="font-weight:800;color:var(--text)">' + d.label + '</div><div style="margin-left:auto;font-family:\'JetBrains Mono\',monospace;font-size:10px;color:var(--muted)">' + d.val + '</div></div>';
             });
 
-            renderMatrices(X, Xt, XtX, XtY, Beta, idxX);
+            renderMatrices(Xs, Xt, XtX, XtY, BetaS, idxX);
             renderDescriptivas();
-            renderGraficos(Y, Y_pred, idxX, Beta, SE, residuos);
+            renderGraficos(Y, Y_pred, idxX, Beta, SE, residuos, meanY, sdRes, meanRes);
             ocultarLoading();
-            mostrarToast('✅ MCO calculado. R² = ' + (R2 * 100).toFixed(2) + '%', 'success');
+            modeloCalculado = true;
+            if (!esAutomatico) mostrarToast('✅ MCO calculado. R² = ' + (R2 * 100).toFixed(2) + '%', 'success');
         } catch (err) {
             ocultarLoading();
-            mostrarToast('❌ Error: ' + err.message, 'error');
+            mostrarToast('❌ Error en MCO: ' + err.message, 'error');
             console.error(err);
         }
-    }, 80);
+    }, esAutomatico ? 10 : 80);
 }
 
-// === MATRICES X, Xᵀ, XᵀX, XᵀY, β̂ ===
+// === GRÁFICOS DINÁMICOS ===
+function renderGraficos(Y, Y_pred, idxX, Beta, SE, residuos, meanY, sdRes, meanRes) {
+    var n = Y.length;
+    var step = Math.max(1, Math.floor(n / 3000));
+    
+    // Variables para el modal de distribución
+    globalResiduos = residuos;
+    globalMediaY = meanY;
+    globalSdRes = sdRes;
+    globalMeanRes = meanRes;
+
+    // 1. Real vs Predicho
+    var scatterPts = [];
+    var minVal = Math.min(...Y.map(v=>v[0])), maxVal = Math.max(...Y.map(v=>v[0]));
+    for (var i = 0; i < n; i += step) scatterPts.push({ x: Y[i][0], y: Y_pred[i][0] });
+    if (chartScatter) chartScatter.destroy();
+    
+    var configScatter = {
+        type: 'scatter',
+        data: { datasets: [
+            { label: 'Datos', data: scatterPts, backgroundColor: 'rgba(43,108,176,0.6)', pointRadius: 2 },
+            { label: 'Línea Ideal', data: [{x: minVal, y: minVal}, {x: maxVal, y: maxVal}], type: 'line', borderColor: 'rgba(229,62,62,0.8)', borderWidth: 2, borderDash: [5, 5], pointRadius: 0, fill: false }
+        ]},
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { title: { display: true, text: 'Consumo Real (m³)' } }, y: { title: { display: true, text: 'Consumo Predicho (m³)' } } } }
+    };
+    chartScatter = new Chart(document.getElementById('chartScatter').getContext('2d'), configScatter);
+    document.getElementById('chartScatter').setAttribute('data-config', JSON.stringify(configScatter));
+
+    // 2. Importancia |t|
+    if (chartBar) chartBar.destroy();
+    var labels = idxX.map(function(i) { return headersCSV[i]; });
+    var tStats = idxX.map(function(_, i) { return Math.abs(Beta[i + 1][0] / (SE[i + 1] || 1e-10)); });
+    
+    var configBar = {
+        type: 'bar',
+        data: { labels: labels, datasets: [{ label: '|t|', data: tStats, backgroundColor: 'rgba(128,90,213,0.7)', borderRadius: 6 }] },
+        options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { title: { display: true, text: 'Estadístico |t|' } } } }
+    };
+    chartBar = new Chart(document.getElementById('chartBar').getContext('2d'), configBar);
+    document.getElementById('chartBar').setAttribute('data-config', JSON.stringify(configBar));
+
+    // 3. Residuos vs Predicho
+    if (chartResiduos) chartResiduos.destroy();
+    var resPts = [];
+    for (var i = 0; i < n; i += step) resPts.push({ x: Y_pred[i][0], y: residuos[i] });
+    
+    var configResiduos = {
+        type: 'scatter',
+        data: { datasets: [{ label: 'Residuos', data: resPts, backgroundColor: 'rgba(56,161,105,0.5)', pointRadius: 2 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { title: { display: true, text: 'Predicho (m³)' } }, y: { title: { display: true, text: 'Residuo (m³)' } } } }
+    };
+    chartResiduos = new Chart(document.getElementById('chartResiduos').getContext('2d'), configResiduos);
+    document.getElementById('chartResiduos').setAttribute('data-config', JSON.stringify(configResiduos));
+
+    // 4. Histograma (SIN LA CURVA DE GAUSS, SOLO BARRAS)
+    if (chartHist) chartHist.destroy();
+    var minR = Math.min(...residuos), maxR = Math.max(...residuos);
+    var nBins = Math.min(30, Math.ceil(Math.sqrt(n)));
+    var binWidth = (maxR - minR) / nBins || 1;
+    var bins = new Array(nBins).fill(0), binLabels = [];
+    for (var i = 0; i < nBins; i++) binLabels.push((minR + i * binWidth).toFixed(0));
+    residuos.forEach(function(r) { var idx = Math.min(nBins - 1, Math.floor((r - minR) / binWidth)); bins[idx]++; });
+    
+    var configHist = {
+        type: 'bar',
+        data: { 
+            labels: binLabels, 
+            datasets: [
+                { label: 'Frecuencia Real', data: bins, backgroundColor: 'rgba(56,178,172,0.7)', borderRadius: 3 }
+            ] 
+        },
+        options: { 
+            responsive: true, maintainAspectRatio: false, 
+            plugins: { legend: { display: false } },
+            scales: { x: { title: { display: true, text: 'Residuo (m³)' } }, y: { title: { display: true, text: 'Frecuencia' } } }
+        }
+    };
+    chartHist = new Chart(document.getElementById('chartHist').getContext('2d'), configHist);
+    document.getElementById('chartHist').setAttribute('data-config', JSON.stringify(configHist));
+
+    // 5. Gráfico Q-Q
+    if (chartQQ) chartQQ.destroy();
+    var sortedRes = [...residuos].sort((a, b) => a - b);
+    var qqData = [];
+    
+    function invNorm(p) {
+        if (p <= 0) return -Infinity; if (p >= 1) return Infinity;
+        var q = p - 0.5, r, val;
+        if (Math.abs(q) <= 0.425) {
+            r = 0.180625 - q * q;
+            val = q * (((((((r * 2509.0809287301226727 + 33430.575583588128105) * r + 67265.770927008700853) * r + 45921.953931549871457) * r + 13731.693765509461125) * r + 1971.5909503065514427) * r + 133.14166789178437745) * r + 3.387132872796366608) / (((((((r * 5226.495278852545925 + 28729.085735721942674) * r + 39307.89580009271061) * r + 21213.794301586595867) * r + 5394.1960214247511077) * r + 687.1870074920579083) * r + 42.313330701600911252) * r + 1.0);
+        } else {
+            if (q <= 0) { r = p; } else { r = 1.0 - p; }
+            r = Math.sqrt(-Math.log(r));
+            if (r <= 5.0) {
+                r = r - 1.6;
+                val = (((((((r * 7.7454501427834140764e-4 + 0.0227238449892691845833) * r + 0.24178072517745061177) * r + 1.27045825245236838258) * r + 3.64784832476320460504) * r + 5.7694972214606914055) * r + 4.6303378461565452959) * r + 1.42343711074968357734) / (((((((r * 1.05075007164441684324e-9 + 5.475938084995344946e-4) * r + 0.0151986665636164571966) * r + 0.14810397642748007459) * r + 0.68976733498510000455) * r + 1.6763848301838038494) * r + 2.05319162663775882187) * r + 1.0);
+            } else {
+                r = r - 5.0;
+                val = (((((((r * 2.01033439929228813265e-7 + 2.71155556874348757815e-5) * r + 0.0012426609473880784386) * r + 0.026532189526576123093) * r + 0.29656057182850489123) * r + 1.7848265399172913358) * r + 5.4637849111641143699) * r + 6.6579046435011037772) / (((((((r * 2.04426310338993978564e-15 + 1.4215117583164458887e-7) * r + 1.8463183175100546818e-5) * r + 7.868691311456132591e-4) * r + 0.0148753612908506148525) * r + 0.13692988092273580531) * r + 0.59983220655588793769) * r + 1.0);
+            }
+            if (q < 0.0) val = -val;
+        }
+        return val;
+    }
+
+    for (var i = 0; i < n; i += Math.max(1, Math.floor(n/500))) {
+        var p = (i + 0.5) / n;
+        var theoretical = invNorm(p) * sdRes + meanRes;
+        qqData.push({ x: theoretical, y: sortedRes[i] });
+    }
+    
+    var configQQ = {
+        type: 'scatter',
+        data: { datasets: [
+            { label: 'Residuos', data: qqData, backgroundColor: 'rgba(214,158,46,0.8)', pointRadius: 3 },
+            { label: 'Línea Normal', data: [{x: Math.min(...qqData.map(d=>d.x)), y: Math.min(...qqData.map(d=>d.x))}, {x: Math.max(...qqData.map(d=>d.x)), y: Math.max(...qqData.map(d=>d.x))}], type: 'line', borderColor: 'rgba(26,54,93,1)', borderWidth: 2, pointRadius: 0, fill: false }
+        ]},
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { title: { display: true, text: 'Cuantiles Teóricos' } }, y: { title: { display: true, text: 'Cuantiles Reales' } } } }
+    };
+    chartQQ = new Chart(document.getElementById('chartQQ').getContext('2d'), configQQ);
+    document.getElementById('chartQQ').setAttribute('data-config', JSON.stringify(configQQ));
+
+    // 6. Distribución Normal Real de los Residuos (CAMPANA PERFECTA)
+    if (chartDist) chartDist.destroy();
+    var distData = [];
+    for (var i = -4; i <= 4; i += 0.05) {
+        distData.push({ x: meanRes + i * sdRes, y: Math.exp(-0.5 * i * i) / (sdRes * Math.sqrt(2 * Math.PI)) });
+    }
+    
+    // Límites de confianza (Z = -2, Z = +2)
+    var limInf = meanRes - 2 * sdRes;
+    var limSup = meanRes + 2 * sdRes;
+
+    var configDist = {
+        type: 'scatter',
+        data: { 
+            datasets: [
+                { 
+                    label: 'Campana de Gauss', 
+                    data: distData, 
+                    borderColor: 'rgba(26,54,93,1)', 
+                    backgroundColor: 'rgba(43,108,176,0.15)', 
+                    showLine: true, 
+                    fill: true, 
+                    tension: 0.4, 
+                    pointRadius: 0 
+                },
+                {
+                    label: 'Límite -2σ',
+                    data: [{x: limInf, y: 0}, {x: limInf, y: Math.exp(-0.5 * 4) / (sdRes * Math.sqrt(2 * Math.PI))}],
+                    borderColor: 'rgba(229,62,62,0.7)',
+                    borderWidth: 2,
+                    borderDash: [5,5],
+                    showLine: true,
+                    pointRadius: 0
+                },
+                {
+                    label: 'Límite +2σ',
+                    data: [{x: limSup, y: 0}, {x: limSup, y: Math.exp(-0.5 * 4) / (sdRes * Math.sqrt(2 * Math.PI))}],
+                    borderColor: 'rgba(229,62,62,0.7)',
+                    borderWidth: 2,
+                    borderDash: [5,5],
+                    showLine: true,
+                    pointRadius: 0
+                }
+            ] 
+        },
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false, 
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { type: 'linear', title: { display: true, text: 'Valor del Residuo' }, grid: { display: false } },
+                y: { title: { display: true, text: 'Densidad' }, display: true, ticks: { display: false } }
+            }
+        }
+    };
+    chartDist = new Chart(document.getElementById('chartDist').getContext('2d'), configDist);
+    document.getElementById('chartDist').setAttribute('data-config', JSON.stringify(configDist));
+}
+
+// === MATRICES DINÁMICAS ===
 function renderMatrices(X, Xt, XtX, XtY, Beta, idxX) {
     var container = document.getElementById('matriz-container');
     if (!container) return;
@@ -818,79 +1257,51 @@ function renderMatrices(X, Xt, XtX, XtY, Beta, idxX) {
     var n = X.length;
     var html = '<div style="display:flex;flex-wrap:wrap;gap:24px;justify-content:center;">';
 
-    // Matriz X (primeras 10 filas)
-    html += '<div><div style="font-weight:800;font-size:11px;color:var(--gold);margin-bottom:8px;text-transform:uppercase;">Matriz X (' + n + '×' + k + ') · primeras 10 filas</div><div class="matrix-wrap"><table>';
+    html += '<div><div style="font-weight:800;font-size:11px;color:var(--gold);margin-bottom:8px;text-transform:uppercase;">Matriz X estandarizada (' + n + '×' + k + ') · Primeras 10 filas</div><div class="matrix-wrap"><table>';
     html += '<tr><th></th>';
-    for (var j = 0; j < k; j++) html += '<th>' + (j === 0 ? '1' : headersCSV[idxX[j-1]].substring(0,8)) + '</th>';
+    for (var j = 0; j < k; j++) html += '<th>' + (j === 0 ? '1' : headersCSV[idxX[j-1]]) + '</th>';
     html += '</tr>';
     for (var i = 0; i < Math.min(10, n); i++) {
         html += '<tr><th style="text-align:right;padding-right:8px;">f' + (i+1) + '</th>';
-        for (var j = 0; j < k; j++) html += '<td>' + X[i][j].toFixed(1) + '</td>';
+        for (var j = 0; j < k; j++) html += '<td>' + X[i][j].toFixed(3) + '</td>';
         html += '</tr>';
     }
-    html += '</table></div><div style="font-size:9px;color:var(--muted);text-align:center;margin-top:4px;">… ' + (n-10) + ' filas más</div></div>';
+    html += '</table></div></div>';
 
-    // Matriz Xᵀ (k × n, primeras 10 columnas)
-    html += '<div><div style="font-weight:800;font-size:11px;color:var(--gold);margin-bottom:8px;text-transform:uppercase;">Matriz Xᵀ (' + k + '×' + n + ') · primeras 10 col.</div><div class="matrix-wrap"><table>';
-    html += '<tr><th></th>';
-    for (var j = 0; j < Math.min(10, n); j++) html += '<th>c' + (j+1) + '</th>';
-    html += '</tr>';
-    for (var i = 0; i < k; i++) {
-        html += '<tr><th style="text-align:right;padding-right:8px;">' + (i === 0 ? '1' : headersCSV[idxX[i-1]].substring(0,8)) + '</th>';
-        for (var j = 0; j < Math.min(10, n); j++) html += '<td>' + Xt[i][j].toFixed(1) + '</td>';
-        html += '</tr>';
-    }
-    html += '</table></div><div style="font-size:9px;color:var(--muted);text-align:center;margin-top:4px;">… ' + (n-10) + ' columnas más</div></div>';
-
-    // Matriz XᵀX (k × k)
-    html += '<div><div style="font-weight:800;font-size:11px;color:var(--gold);margin-bottom:8px;text-transform:uppercase;">Matriz XᵀX (' + k + '×' + k + ')</div><div class="matrix-wrap"><table>';
+    html += '<div><div style="font-weight:800;font-size:11px;color:var(--gold);margin-bottom:8px;text-transform:uppercase;">Matriz XᵀX (estandarizada) (' + k + '×' + k + ')</div><div class="matrix-wrap"><table>';
     for (var i = 0; i < k; i++) {
         html += '<tr>';
-        for (var j = 0; j < k; j++) html += (i === 0 && j === 0 ? '<th>' : '<td>') + XtX[i][j].toFixed(1) + (i === 0 && j === 0 ? '</th>' : '</td>');
+        for (var j = 0; j < k; j++) html += (i === 0 && j === 0 ? '<th>' : '<td>') + XtX[i][j].toFixed(2) + (i === 0 && j === 0 ? '</th>' : '</td>');
         html += '</tr>';
     }
     html += '</table></div></div>';
 
-    // Vector XᵀY (k × 1)
-    html += '<div><div style="font-weight:800;font-size:11px;color:var(--gold);margin-bottom:8px;text-transform:uppercase;">Vector XᵀY (' + k + '×1)</div><div class="matrix-wrap"><table>';
-    for (var i = 0; i < k; i++) html += '<tr><td>' + XtY[i][0].toFixed(1) + '</td></tr>';
-    html += '</table></div></div>';
-
-    // Coeficientes β̂
-    html += '<div><div style="font-weight:800;font-size:11px;color:var(--gold);margin-bottom:8px;text-transform:uppercase;">Coeficientes β̂</div><div class="matrix-wrap"><table>';
+    html += '<div><div style="font-weight:800;font-size:11px;color:var(--gold);margin-bottom:8px;text-transform:uppercase;">Coeficientes β̂ (estandarizados)</div><div class="matrix-wrap"><table>';
     for (var i = 0; i < k; i++) {
         var name = i === 0 ? 'Intercepto' : headersCSV[idxX[i - 1]];
-        html += '<tr><th style="text-align:left;padding-right:14px;">' + name + '</th><td>' + Beta[i][0].toFixed(4) + '</td></tr>';
+        html += '<tr><th style="text-align:left;padding-right:14px;">' + name + '</th><td>' + Beta[i][0].toFixed(6) + '</td></tr>';
     }
     html += '</table></div></div></div>';
     container.innerHTML = html;
 }
 
-// === ESTADÍSTICAS DESCRIPTIVAS ===
+// === ESTADÍSTICAS DESCRIPTIVAS DINÁMICAS ===
 function renderDescriptivas() {
     var container = document.getElementById('descriptivas-container');
     if (!container || datosCSV.length === 0) return;
 
+    var idxY = parseInt(document.getElementById('sel-y').value);
     var idxX = [];
     document.querySelectorAll('#check-x input:checked').forEach(function(cb) { idxX.push(parseInt(cb.value)); });
     if (idxX.length === 0) return;
 
-    var variables = [0].concat(idxX);
+    var variables = [idxY].concat(idxX);
     var nombres = variables.map(function(i) { return headersCSV[i]; });
     var m = variables.length;
     var n = datosCSV.length;
 
-    var medias = variables.map(function(col) {
-        var sum = 0;
-        for (var i = 0; i < n; i++) sum += datosCSV[i][col];
-        return sum / n;
-    });
-
-    var varianzas = variables.map(function(col, vi) {
-        var sum = 0;
-        for (var i = 0; i < n; i++) sum += Math.pow(datosCSV[i][col] - medias[vi], 2);
-        return sum / (n - 1);
-    });
+    var medias = variables.map(function(col) { var sum = 0; for (var i = 0; i < n; i++) sum += datosCSV[i][col]; return sum / n; });
+    var varianzas = variables.map(function(col, vi) { var sum = 0; for (var i = 0; i < n; i++) sum += Math.pow(datosCSV[i][col] - medias[vi], 2); return sum / (n - 1); });
     var desviaciones = varianzas.map(function(v) { return Math.sqrt(v); });
 
     var covMatrix = [];
@@ -914,7 +1325,7 @@ function renderDescriptivas() {
     var html = '';
 
     html += '<div style="margin-bottom:16px;"><div style="font-weight:800;font-size:11px;color:var(--gold);margin-bottom:8px;text-transform:uppercase;">Media · Varianza · Desviación Estándar</div>';
-    html += '<table class="matriz" style="width:100%;"><thead><tr><th>Variable</th><th>Media (μ)</th><th>Varianza (σ²)</th><th>Desv. Est. (σ)</th></tr></thead><tbody>';
+    html += '<table class="matriz" style="width:100%;"><thead><tr><th>Variable</th><th>Media</th><th>Varianza</th><th>Desv. Est.</th></tr></thead><tbody>';
     for (var i = 0; i < m; i++) {
         html += '<tr><td style="text-align:left;font-weight:700;">' + nombres[i] + '</td><td>' + medias[i].toFixed(2) + '</td><td>' + varianzas[i].toFixed(2) + '</td><td>' + desviaciones[i].toFixed(2) + '</td></tr>';
     }
@@ -958,186 +1369,265 @@ function renderDescriptivas() {
     document.getElementById('desc-count').textContent = m + ' variables';
 }
 
-// === GRÁFICOS ===
-var scatterSampleData = [];
-
-function renderGraficos(Y, Y_pred, idxX, Beta, SE, residuos) {
-    var isDark = document.body.classList.contains('dark-mode');
-    var textColor = isDark ? '#e2e8f0' : '#4a5568';
-    var gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
-
-    var n = Y.length;
-    var step = Math.max(1, Math.floor(n / 3000));
-    var scatterPts = [];
-    for (var i = 0; i < n; i += step) scatterPts.push({ x: Y[i][0], y: Y_pred[i][0], idx: i });
-    scatterSampleData = scatterPts;
-
-    if (chartScatter) chartScatter.destroy();
-    chartScatter = new Chart(document.getElementById('chartScatter').getContext('2d'), {
-        type: 'scatter',
-        data: { datasets: [{ label: 'Datos', data: scatterPts, backgroundColor: 'rgba(59,130,246,0.5)', borderColor: 'rgba(59,130,246,0.9)', pointRadius: 2, pointHoverRadius: 6 }] },
-        options: {
-            responsive: true, maintainAspectRatio: false,
-            onClick: function(evt, elements) {
-                if (elements.length > 0) {
-                    var idx = scatterPts[elements[0].index].idx;
-                    var r = datosCSV[idx];
-                    if (r) {
-                        map.setView([r[1], r[2]], 16);
-                        mostrarToast('📍 Registro #' + (idx + 1) + ' · Consumo: ' + r[0].toFixed(0) + ' m³', 'info');
-                    }
-                }
-            },
-            plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(ctx) { return 'Real: ' + ctx.raw.x.toFixed(1) + ' | Pred: ' + ctx.raw.y.toFixed(1); } } } },
-            scales: {
-                x: { title: { display: true, text: 'Real', color: textColor, font: { size: 10, weight: 'bold' } }, grid: { color: gridColor }, ticks: { color: textColor, font: { size: 9 } } },
-                y: { title: { display: true, text: 'Predicho', color: textColor, font: { size: 10, weight: 'bold' } }, grid: { color: gridColor }, ticks: { color: textColor, font: { size: 9 } } }
-            }
-        }
-    });
-
-    if (chartBar) chartBar.destroy();
-    var labels = idxX.map(function(i) { return headersCSV[i].length > 12 ? headersCSV[i].substring(0, 10) + '…' : headersCSV[i]; });
-    var tStats = idxX.map(function(_, i) { return Math.abs(Beta[i + 1][0] / (SE[i + 1] || 1e-10)); });
-    var colors = tStats.map(function(t) { return t > 2.5 ? 'rgba(56,161,105,0.85)' : t > 1.5 ? 'rgba(214,158,46,0.85)' : 'rgba(229,62,62,0.75)'; });
-
-    chartBar = new Chart(document.getElementById('chartBar').getContext('2d'), {
-        type: 'bar',
-        data: { labels: labels, datasets: [{ label: '|t|', data: tStats, backgroundColor: colors, borderColor: colors.map(function(c) { return c.replace(/0\.\d+/, '1'); }), borderWidth: 1, borderRadius: 5 }] },
-        options: {
-            responsive: true, maintainAspectRatio: false, indexAxis: 'y',
-            onClick: function(evt, elements) {
-                if (elements.length > 0) {
-                    var i = elements[0].index;
-                    var varIdx = idxX[i];
-                    colorearMapaPorVariable(varIdx);
-                }
-            },
-            plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(ctx) { return '|t| = ' + ctx.raw.toFixed(3) + ' (clic para colorear mapa)'; } } } },
-            scales: {
-                x: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 9 } } },
-                y: { grid: { display: false }, ticks: { color: textColor, font: { size: 9, weight: 'bold' } } }
-            }
-        }
-    });
-
-    if (chartResiduos) chartResiduos.destroy();
-    var resPts = [];
-    for (var i = 0; i < n; i += step) resPts.push({ x: Y_pred[i][0], y: residuos[i] });
-    chartResiduos = new Chart(document.getElementById('chartResiduos').getContext('2d'), {
-        type: 'scatter',
-        data: { datasets: [{ label: 'Residuos', data: resPts, backgroundColor: resPts.map(function(p) { return p.y > 0 ? 'rgba(56,161,105,0.5)' : 'rgba(229,62,62,0.5)'; }), borderColor: resPts.map(function(p) { return p.y > 0 ? 'rgba(56,161,105,0.9)' : 'rgba(229,62,62,0.9)'; }), pointRadius: 2, pointHoverRadius: 5 }] },
-        options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(ctx) { return 'Pred: ' + ctx.raw.x.toFixed(1) + ' | Res: ' + ctx.raw.y.toFixed(2); } } } },
-            scales: {
-                x: { title: { display: true, text: 'Predicho', color: textColor, font: { size: 10, weight: 'bold' } }, grid: { color: gridColor }, ticks: { color: textColor, font: { size: 9 } } },
-                y: { title: { display: true, text: 'Residuo', color: textColor, font: { size: 10, weight: 'bold' } }, grid: { color: gridColor }, ticks: { color: textColor, font: { size: 9 } } }
-            }
-        }
-    });
-
-    if (chartHist) chartHist.destroy();
-    var minR = Math.min.apply(null, residuos), maxR = Math.max.apply(null, residuos);
-    var nBins = Math.min(25, Math.ceil(Math.sqrt(residuos.length)));
-    var binWidth = (maxR - minR) / nBins || 1;
-    var bins = new Array(nBins).fill(0), binLabels = [];
-    for (var i = 0; i < nBins; i++) binLabels.push((minR + i * binWidth).toFixed(0));
-    residuos.forEach(function(r) { var idx = Math.min(nBins - 1, Math.floor((r - minR) / binWidth)); bins[idx]++; });
-
-    chartHist = new Chart(document.getElementById('chartHist').getContext('2d'), {
-        type: 'bar',
-        data: { labels: binLabels, datasets: [{ label: 'Frecuencia', data: bins, backgroundColor: 'rgba(128,90,213,0.65)', borderColor: 'rgba(128,90,213,1)', borderWidth: 1, borderRadius: 3 }] },
-        options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-                x: { title: { display: true, text: 'Residuo', color: textColor, font: { size: 10, weight: 'bold' } }, grid: { display: false }, ticks: { color: textColor, font: { size: 9 } } },
-                y: { title: { display: true, text: 'Frecuencia', color: textColor, font: { size: 10, weight: 'bold' } }, grid: { color: gridColor }, ticks: { color: textColor, font: { size: 9 } } }
-            }
-        }
-    });
-}
-
-function highlightBar(idx) {
-    if (!chartBar) return;
-    chartBar.data.datasets[0].backgroundColor = chartBar.data.datasets[0].backgroundColor.map(function(c, i) {
-        if (i === idx) return 'rgba(214,158,46,1)';
-        return c.replace('1)', '0.4)');
-    });
-    chartBar.update('none');
-}
-
-function colorearMapaPorVariable(varIdx) {
-    var name = headersCSV[varIdx];
-    var vals = datosCSV.map(function(r) { return r[varIdx]; });
-    var minV = Math.min.apply(null, vals), maxV = Math.max.apply(null, vals);
-    var range = maxV - minV || 1;
-    mostrarToast('🎨 Mapa coloreado por: ' + name + ' (rango ' + minV.toFixed(0) + '–' + maxV.toFixed(0) + ')', 'info');
-    clusterGroup.clearLayers();
-    pointLayer.clearLayers();
-    datosFiltrados.forEach(function(r, idx) {
-        var lat = r[1], lng = r[2];
-        if (isNaN(lat) || isNaN(lng)) return;
-        var v = (r[varIdx] - minV) / range;
-        var color = 'hsl(' + (120 * (1 - v)) + ',75%,50%)';
-        var popup = '<div class="popup-title"><i class="fas fa-map-pin" style="color:var(--gold)"></i> Registro #' + (idx + 1) + '</div>';
-        headersCSV.forEach(function(h, j) { var val = r[j]; if (typeof val === 'number') val = val.toLocaleString('es-BO', { maximumFractionDigits: 2 }); popup += '<div class="popup-row"><span class="pl">' + h + '</span><span class="pv">' + val + '</span></div>'; });
-        var marker = L.circleMarker([lat, lng], { radius: 5, fillColor: color, color: '#fff', weight: 1, fillOpacity: 0.85 });
-        marker.bindPopup(popup, { maxWidth: 300 });
-        if (mapMode === 'cluster') clusterGroup.addLayer(marker); else pointLayer.addLayer(marker);
-    });
-}
-
-// === PDF ===
+// === PDF PROFESIONAL MEJORADO ===
 function descargarPDF() {
-    if (BetaGlobal.length === 0) { mostrarToast('⚠️ Calcule el MCO primero.', 'warning'); return; }
-    var jsPDF = window.jspdf.jsPDF;
-    var doc = new jsPDF('p', 'mm', 'a4');
-    doc.setFontSize(18); doc.setTextColor(26, 54, 93);
-    doc.text('Informe MCO - EPSAS La Paz', 15, 22);
-    doc.setFontSize(10); doc.setTextColor(100);
-    doc.text('Análisis Multivariado para Pronósticos Sanitarios', 15, 30);
-    doc.setDrawColor(214, 158, 46); doc.setLineWidth(0.8); doc.line(15, 34, 195, 34);
-    doc.setFontSize(11); doc.setTextColor(26, 54, 93);
-    doc.text('Coeficientes Estimados', 15, 44);
-    var y = 54; doc.setFontSize(9); doc.setTextColor(60);
-    for (var i = 0; i < BetaGlobal.length; i++) {
-        var name = i === 0 ? 'Intercepto' : headersCSV[idxXGlobal[i - 1]];
-        doc.text(name + ': β = ' + BetaGlobal[i][0].toFixed(4) + ' | SE = ' + (SEGlobal[i] || 0).toFixed(4), 20, y);
-        y += 7;
-    }
-    doc.save('Informe_MCO_EPSAS_LaPaz.pdf');
-    mostrarToast('📄 Informe PDF generado.', 'success');
+    if (BetaGlobal.length === 0) { mostrarToast('⚠️ Calcule el MCO primero para generar el informe.', 'warning'); return; }
+    
+    mostrarLoading('Generando informe profesional...');
+    
+    setTimeout(function() {
+        try {
+            var jsPDF = window.jspdf.jsPDF;
+            var doc = new jsPDF('p', 'mm', 'a4');
+            var pageW = 210;
+            var pageH = 297;
+            var margin = 20;
+            var gl = datosCSV.length - BetaGlobal.length;
+            
+            // --- RECALCULAR MÉTRICAS PARA EL INFORME ---
+            var residuos = [];
+            var ssr = 0, sst = 0;
+            var meanY = 0;
+            for (var i = 0; i < datosCSV.length; i++) meanY += datosCSV[i][parseInt(document.getElementById('sel-y').value)];
+            meanY /= datosCSV.length;
+            
+            for (var i = 0; i < datosCSV.length; i++) {
+                var yPred = BetaGlobal[0][0];
+                for (var j = 0; j < idxXGlobal.length; j++) yPred += BetaGlobal[j+1][0] * datosCSV[i][idxXGlobal[j]];
+                var e = datosCSV[i][parseInt(document.getElementById('sel-y').value)] - yPred;
+                residuos.push(e);
+                ssr += e * e;
+                sst += Math.pow(datosCSV[i][parseInt(document.getElementById('sel-y').value)] - meanY, 2);
+            }
+            var r2 = Math.max(0, 1 - (ssr / sst));
+            var r2Adj = 1 - ((1 - r2) * (datosCSV.length - 1) / gl);
+            
+            var dw = 0;
+            for (var i = 1; i < residuos.length; i++) dw += Math.pow(residuos[i] - residuos[i-1], 2);
+            dw /= ssr;
+            
+            var meanRes = residuos.reduce(function(a, b) { return a + b; }, 0) / residuos.length;
+            var sdRes = Math.sqrt(residuos.reduce(function(a, b) { return a + Math.pow(b - meanRes, 2); }, 0) / residuos.length);
+            var skew = 0, kurt = 0;
+            for (var i = 0; i < residuos.length; i++) {
+                var z = (residuos[i] - meanRes) / (sdRes || 1);
+                skew += Math.pow(z, 3); kurt += Math.pow(z, 4);
+            }
+            skew /= residuos.length; kurt = kurt / residuos.length - 3;
+            var jb = (residuos.length / 6) * (Math.pow(skew, 2) + Math.pow(kurt, 2) / 4);
+            
+            // --- PORTADA ---
+            doc.setFillColor(26, 54, 93); // Azul oscuro
+            doc.rect(0, 0, pageW, pageH, 'F');
+            
+            doc.setFillColor(214, 158, 46); // Dorado
+            doc.rect(0, 120, pageW, 4, 'F');
+            
+            doc.setFontSize(28); doc.setTextColor(255, 255, 255);
+            doc.setFont("helvetica", "bold");
+            doc.text("EPSAS LA PAZ", margin, 90);
+            
+            doc.setFontSize(16); doc.setTextColor(214, 158, 46);
+            doc.text("Informe Ejecutivo de Modelamiento MCO", margin, 105);
+            
+            doc.setFontSize(11); doc.setTextColor(200, 200, 200);
+            doc.setFont("helvetica", "normal");
+            doc.text("Análisis Multivariado para Pronóstico de Consumo", margin, 140);
+            doc.text("Variable Dependiente: " + headersCSV[parseInt(document.getElementById('sel-y').value)], margin, 147);
+            
+            doc.setDrawColor(255, 255, 255); doc.setLineWidth(0.2);
+            doc.line(margin, 160, pageW - margin, 160);
+            
+            doc.setFontSize(10); doc.setTextColor(255, 255, 255);
+            doc.text("Fecha de Generación: " + new Date().toLocaleString('es-BO'), margin, 175);
+            doc.text("Registros Analizados: " + datosCSV.length.toLocaleString(), margin, 182);
+            doc.text("Variables Explicativas (X): " + idxXGlobal.length, margin, 189);
+            
+            // --- PÁGINA 2: RESUMEN EJECUTIVO ---
+            doc.addPage();
+            doc.setFillColor(255, 255, 255); doc.rect(0, 0, pageW, pageH, 'F');
+            
+            var y = margin;
+            doc.setFontSize(18); doc.setTextColor(26, 54, 93); doc.setFont("helvetica", "bold");
+            doc.text("1. Resumen Ejecutivo", margin, y);
+            y += 5;
+            doc.setDrawColor(214, 158, 46); doc.setLineWidth(1); doc.line(margin, y, 80, y);
+            y += 10;
+            
+            // Caja de R2
+            doc.setFillColor(240, 244, 248); doc.roundedRect(margin, y, pageW - (margin*2), 25, 3, 3, 'F');
+            doc.setFontSize(12); doc.setTextColor(26, 54, 93); doc.setFont("helvetica", "bold");
+            doc.text("Calidad del Ajuste (R²): " + (r2 * 100).toFixed(2) + "%", margin + 5, y + 10);
+            doc.setFontSize(10); doc.setTextColor(100, 100, 100); doc.setFont("helvetica", "normal");
+            
+            var calidadR2 = r2 > 0.8 ? "Excelente. El modelo explica gran parte de la variabilidad del consumo." : 
+                           r2 > 0.6 ? "Bueno. El modelo tiene una capacidad predictiva aceptable, pero puede mejorar." : 
+                           "Bajo. Las variables seleccionadas no explican bien el comportamiento del consumo.";
+            doc.text(calidadR2, margin + 5, y + 18);
+            y += 35;
+            
+            // Texto explicativo
+            doc.setFontSize(11); doc.setTextColor(60, 60, 60); doc.setFont("helvetica", "normal");
+            var splitText = doc.splitTextToSize("El presente informe detalla los resultados del modelo de Mínimos Cuadrados Ordinarios (MCO) aplicado a los datos de consumo de la empresa. Se analizaron " + datosCSV.length.toLocaleString() + " registros para determinar qué variables influyen de manera más significativa en el consumo final. El modelo cuenta con un R² ajustado de " + (r2Adj * 100).toFixed(2) + "%, lo que indica la proporción de la varianza explicada por las variables independientes.", pageW - (margin*2));
+            doc.text(splitText, margin, y);
+            y += 30;
+            
+            // --- PÁGINA 3: TABLA DE COEFICIENTES ---
+            doc.addPage();
+            doc.setFillColor(255, 255, 255); doc.rect(0, 0, pageW, pageH, 'F');
+            y = margin;
+            
+            doc.setFontSize(18); doc.setTextColor(26, 54, 93); doc.setFont("helvetica", "bold");
+            doc.text("2. Coeficientes Estimados", margin, y);
+            y += 5;
+            doc.setDrawColor(214, 158, 46); doc.setLineWidth(1); doc.line(margin, y, 95, y);
+            y += 10;
+            
+            doc.setFontSize(10); doc.setTextColor(100, 100, 100); doc.setFont("helvetica", "normal");
+            doc.text("La siguiente tabla muestra el impacto de cada variable en el consumo. Un valor positivo indica que al aumentar la variable, el consumo sube. Un valor negativo indica lo contrario.", margin, y);
+            y += 10;
+            
+            // Cabecera de tabla
+            doc.setFillColor(26, 54, 93); doc.rect(margin, y, pageW - (margin*2), 8, 'F');
+            doc.setFontSize(9); doc.setTextColor(255, 255, 255); doc.setFont("helvetica", "bold");
+            doc.text("Variable", margin + 2, y + 5.5);
+            doc.text("Coeficiente (β)", margin + 45, y + 5.5);
+            doc.text("Error Est.", margin + 75, y + 5.5);
+            doc.text("Estadístico t", margin + 100, y + 5.5);
+            doc.text("p-valor", margin + 130, y + 5.5);
+            doc.text("Significancia", margin + 150, y + 5.5);
+            y += 8;
+            
+            // Filas de la tabla
+            doc.setFont("helvetica", "normal");
+            for (var i = 0; i < BetaGlobal.length; i++) {
+                if (y > 260) { doc.addPage(); y = margin; }
+                var name = i === 0 ? 'Intercepto' : headersCSV[idxXGlobal[i - 1]];
+                var tStat = (SEGlobal[i] > 1e-12) ? (BetaGlobal[i][0] / SEGlobal[i]) : 0;
+                var pVal = isFinite(tStat) ? pValorT(Math.abs(tStat), gl) : 1;
+                var sig = pVal < 0.01 ? '***' : pVal < 0.05 ? '**' : pVal < 0.10 ? '*' : 'n.s.';
+                
+                // Color de fondo alternado
+                if (i % 2 === 0) { doc.setFillColor(248, 250, 252); doc.rect(margin, y, pageW - (margin*2), 8, 'F'); }
+                
+                doc.setTextColor(40, 40, 40);
+                // Color verde si es significativo
+                if (pVal < 0.05) doc.setTextColor(56, 161, 105);
+                
+                doc.text(String(name).substring(0, 22), margin + 2, y + 5.5);
+                doc.text(BetaGlobal[i][0].toFixed(4), margin + 45, y + 5.5);
+                doc.text(SEGlobal[i].toExponential(2), margin + 75, y + 5.5);
+                doc.text(isFinite(tStat) ? tStat.toFixed(3) : '—', margin + 100, y + 5.5);
+                doc.text(isFinite(pVal) ? pVal.toFixed(4) : '—', margin + 130, y + 5.5);
+                doc.text(sig, margin + 150, y + 5.5);
+                y += 8;
+            }
+            
+            y += 10;
+            doc.setFontSize(9); doc.setTextColor(100, 100, 100); doc.setFont("helvetica", "italic");
+            doc.text("Nota: *** p<0.01 (altamente significativo), ** p<0.05 (significativo), * p<0.10 (marginal), n.s. (no significativo).", margin, y);
+            y += 15;
+            
+            // --- ANÁLISIS DE TOP VARIABLES ---
+            doc.setFontSize(14); doc.setTextColor(26, 54, 93); doc.setFont("helvetica", "bold");
+            doc.text("3. Variables de Mayor Impacto", margin, y);
+            y += 8;
+            
+            // Crear ranking
+            var ranking = [];
+            for (var i = 1; i < BetaGlobal.length; i++) {
+                var name = headersCSV[idxXGlobal[i - 1]];
+                var tStat = Math.abs(BetaGlobal[i][0] / (SEGlobal[i] || 1e-10));
+                ranking.push({ name: name, beta: BetaGlobal[i][0], t: tStat });
+            }
+            ranking.sort(function(a, b) { return b.t - a.t; });
+            
+            doc.setFontSize(10); doc.setTextColor(60, 60, 60); doc.setFont("helvetica", "normal");
+            doc.text("Basado en el estadístico |t|, las variables que más influyen en el consumo son:", margin, y);
+            y += 8;
+            
+            for (var k = 0; k < Math.min(3, ranking.length); k++) {
+                var r = ranking[k];
+                doc.setFont("helvetica", "bold"); doc.setTextColor(26, 54, 93);
+                doc.text((k+1) + ". " + r.name, margin + 5, y);
+                doc.setFont("helvetica", "normal"); doc.setTextColor(60, 60, 60);
+                var efecto = r.beta > 0 ? "Aumenta" : "Disminuye";
+                doc.text("   Efecto: " + efecto + " el consumo (β = " + r.beta.toFixed(4) + "). Nivel de significancia: |t| = " + r.t.toFixed(2), margin + 5, y + 6);
+                y += 15;
+            }
+            
+            // --- PÁGINA 4: DIAGNÓSTICOS ---
+            if (y > 240) { doc.addPage(); y = margin; }
+            y += 10;
+            doc.setFontSize(18); doc.setTextColor(26, 54, 93); doc.setFont("helvetica", "bold");
+            doc.text("4. Diagnósticos Estadísticos", margin, y);
+            y += 5;
+            doc.setDrawColor(214, 158, 46); doc.setLineWidth(1); doc.line(margin, y, 90, y);
+            y += 15;
+            
+            // Durbin-Watson
+            doc.setFontSize(11); doc.setTextColor(26, 54, 93); doc.setFont("helvetica", "bold");
+            doc.text("Autocorrelación (Durbin-Watson):", margin, y);
+            y += 6;
+            doc.setFontSize(10); doc.setTextColor(60, 60, 60); doc.setFont("helvetica", "normal");
+            var dwText = "El estadístico DW es " + dw.toFixed(3) + ". ";
+            if (dw > 1.5 && dw < 2.5) dwText += "Esto indica que NO existe evidencia de autocorrelación en los residuos. El modelo es confiable.";
+            else if (dw <= 1.5) dwText += "Esto sugiere autocorrelación positiva. Los errores tienden a agruparse, lo que puede invalidar algunas pruebas.";
+            else dwText += "Esto sugiere autocorrelación negativa. Los errores fluctúan demasiado rápido.";
+            var dwSplit = doc.splitTextToSize(dwText, pageW - (margin*2));
+            doc.text(dwSplit, margin, y);
+            y += dwSplit.length * 5 + 10;
+            
+            // Jarque-Bera
+            doc.setFontSize(11); doc.setTextColor(26, 54, 93); doc.setFont("helvetica", "bold");
+            doc.text("Normalidad de los Residuos (Jarque-Bera):", margin, y);
+            y += 6;
+            doc.setFontSize(10); doc.setTextColor(60, 60, 60); doc.setFont("helvetica", "normal");
+            var jbText = "El estadístico JB es " + jb.toFixed(2) + ". ";
+            if (jb < 5.99) jbText += "Los residuos siguen una distribución normal (p > 0.05). Se cumple el supuesto del modelo.";
+            else jbText += "Los residuos NO siguen una distribución normal (p < 0.05). Esto puede deberse a valores atípicos o a una mala especificación del modelo.";
+            var jbSplit = doc.splitTextToSize(jbText, pageW - (margin*2));
+            doc.text(jbSplit, margin, y);
+            y += jbSplit.length * 5 + 10;
+            
+            // Conclusión
+            doc.setFillColor(240, 248, 255); doc.roundedRect(margin, y, pageW - (margin*2), 30, 3, 3, 'F');
+            doc.setFontSize(11); doc.setTextColor(26, 54, 93); doc.setFont("helvetica", "bold");
+            doc.text("Conclusión del Modelo", margin + 5, y + 8);
+            doc.setFontSize(9); doc.setTextColor(60, 60, 60); doc.setFont("helvetica", "normal");
+            var conclusion = "El modelo MCO presenta un ajuste del " + (r2*100).toFixed(1) + "%. Las variables con mayor impacto son " + (ranking[0] ? ranking[0].name : "N/A") + " y " + (ranking[1] ? ranking[1].name : "N/A") + ". Se recomienda revisar las variables no significativas y considerar la inclusión de nuevas variables para mejorar la capacidad predictiva.";
+            var conclSplit = doc.splitTextToSize(conclusion, pageW - (margin*2) - 10);
+            doc.text(conclSplit, margin + 5, y + 15);
+            
+            // --- FOOTER EN TODAS LAS PÁGINAS ---
+            var pages = doc.getNumberOfPages();
+            for (var p = 2; p <= pages; p++) { // Empieza en 2 porque la 1 es portada
+                doc.setPage(p);
+                doc.setDrawColor(200, 200, 200); doc.setLineWidth(0.2);
+                doc.line(margin, pageH - 15, pageW - margin, pageH - 15);
+                doc.setFontSize(8); doc.setTextColor(150, 150, 150); doc.setFont("helvetica", "normal");
+                doc.text("EPSAS La Paz · Módulo MCO · Informe Confidencial", margin, pageH - 10);
+                doc.text("Página " + p + " de " + pages, pageW - margin - 25, pageH - 10);
+            }
+            
+            doc.save('Informe_Ejecutivo_MCO_' + new Date().toISOString().slice(0,10) + '.pdf');
+            ocultarLoading();
+            mostrarToast('📄 Informe Ejecutivo generado con éxito.', 'success');
+            
+        } catch (err) {
+            ocultarLoading();
+            mostrarToast('❌ Error al generar PDF: ' + err.message, 'error');
+            console.error(err);
+        }
+    }, 100);
 }
-
-// === RELOJ FOOTER ===
-setInterval(function() {
-    var el = document.getElementById('footer-time');
-    if (el) el.textContent = new Date().toLocaleTimeString('es-BO');
-}, 1000);
+// === RELOJ ===
+setInterval(function() { var el = document.getElementById('footer-time'); if (el) el.textContent = new Date().toLocaleTimeString('es-BO'); }, 1000);
 
 // === INICIO ===
 window.addEventListener('load', function() {
     initBackgroundAnimation();
     initMap();
-
-    var bar = document.getElementById('splashBar');
-    var info = document.getElementById('splashInfo');
-    var pasos = [
-        { t: 'Inicializando sistema...', p: 20 },
-        { t: 'Cargando módulos MCO...', p: 45 },
-        { t: 'Preparando mapa dinámico...', p: 70 },
-        { t: 'Sistema listo', p: 100 }
-    ];
-    var i = 0;
-    var int = setInterval(function() {
-        if (i >= pasos.length) { clearInterval(int); return; }
-        bar.style.width = pasos[i].p + '%';
-        info.textContent = pasos[i].t;
-        i++;
-    }, 280);
-    setTimeout(function() { document.getElementById('splashScreen').classList.add('hidden'); }, 1600);
 });
 </script>
 </body>
